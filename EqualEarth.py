@@ -393,6 +393,30 @@ class EqualEarthAxes(GeoAxes):
     # i.e. ``subplot(111, projection='equal_earth')``.
     name = 'equal_earth'
 
+    def _gen_axes_patch(self):
+        """
+        Override the parent method to define the shape that is used for the
+        background of the plot.  It should be a subclass of Patch.
+
+        In this case, it is a closed square path that is warped by the
+        projection.
+        """
+
+        verts = [(-np.pi, -np.pi/2), # left, bottom
+                 (-np.pi,  np.pi/2), # left, top
+                 ( np.pi,  np.pi/2), # right, top
+                 ( np.pi, -np.pi/2), # right, bottom
+                 (0., 0.)] # ignored                ]
+        codes = [Path.MOVETO,
+                 Path.LINETO,
+                 Path.LINETO,
+                 Path.LINETO,
+                 Path.CLOSEPOLY,
+                 ]
+        path = Path(verts, codes)
+        patch = matplotlib.patches.PathPatch(path)
+        return patch
+
     class EqualEarthTransform(Transform):
         """
         The base Equal Earth transform.
@@ -411,17 +435,23 @@ class EqualEarthAxes(GeoAxes):
             self._resolution = resolution
 
         def transform_non_affine(self, ll):
-            longitude = ll[:, 0:1]
-            latitude = ll[:, 1:2]
+            long = ll[:, 0:1]
+            lat = ll[:, 1:2]
 
             # Pre-compute some values
-            half_long = longitude / 2.0
-            cos_latitude = np.cos(latitude)
-            sqrt2 = np.sqrt(2.0)
+            A1 = 1.340264
+            A2 = -0.081106
+            A3 = 0.000893
+            A4 = 0.003796
+            r3 = np.sqrt(3.)
+            p_lat = np.arcsin(r3 * 0.5 * np.sin(lat))
+            l2 = p_lat**2
+            l6 = p_lat**6
 
-            alpha = np.sqrt(1.0 + cos_latitude * np.cos(half_long))
-            x = (2.0 * sqrt2) * (cos_latitude * np.sin(half_long)) / alpha
-            y = (sqrt2 * np.sin(latitude)) / alpha
+            x = 2. * r3 * long * np.cos(p_lat)/ \
+                (3.*(A1 + 3.*A2*l2 + l6*(7.*A3 + 9.*A4*l2)))
+            y = p_lat*(A1 + A2*l2 + l6*(A3 + A4*l2))
+
             return np.concatenate((x, y), 1)
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
 
@@ -475,8 +505,9 @@ register_projection(EqualEarthAxes)
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     # Now make a simple example using the custom projection.
-    plt.subplot(111, projection="equal_earth")
-    p = plt.plot([-1, 1, 1], [-1, -1, 1], "o-")
+    fig = plt.figure('Equal Earth Projection')
+    ax = fig.add_subplot(111, projection="equal_earth")
+    p = ax.plot([-1, 1, 1], [-1, -1, 1], "o-")
     plt.grid(True)
 
     plt.show()
