@@ -393,6 +393,24 @@ class EqualEarthAxes(GeoAxes):
     # i.e. ``subplot(111, projection='equal_earth')``.
     name = 'equal_earth'
 
+    def _gen_axes_path(self):
+        """
+        Create the path that defines the outline of the projection
+        """
+        verts = [(-np.pi, -np.pi/2), # left, bottom
+                 (-np.pi,  np.pi/2), # left, top
+                 ( np.pi,  np.pi/2), # right, top
+                 ( np.pi, -np.pi/2), # right, bottom
+                 (-np.pi, -np.pi/2)] # ignored                ]
+        codes = [Path.MOVETO,
+                 Path.LINETO,
+                 Path.LINETO,
+                 Path.LINETO,
+                 Path.CLOSEPOLY,
+                 ]
+        path = Path(verts, codes)
+        return path
+
     def _gen_axes_patch(self):
         """
         Override the parent method to define the shape that is used for the
@@ -401,21 +419,17 @@ class EqualEarthAxes(GeoAxes):
         In this case, it is a closed square path that is warped by the
         projection.
         """
-
-        verts = [(-np.pi, -np.pi/2), # left, bottom
-                 (-np.pi,  np.pi/2), # left, top
-                 ( np.pi,  np.pi/2), # right, top
-                 ( np.pi, -np.pi/2), # right, bottom
-                 (0., 0.)] # ignored                ]
-        codes = [Path.MOVETO,
-                 Path.LINETO,
-                 Path.LINETO,
-                 Path.LINETO,
-                 Path.CLOSEPOLY,
-                 ]
-        path = Path(verts, codes)
+        path = self._gen_axes_path()
         patch = matplotlib.patches.PathPatch(path)
         return patch
+
+    def _gen_axes_spines(self):
+        spine_type = 'circle'
+        path = self._gen_axes_path()
+
+        spine = mspines.Spine(self, spine_type, path, linewidth=2)
+        #spine.set_transform(self.transAxes)
+        return {'geo': spine}
 
     class EqualEarthTransform(Transform):
         """
@@ -506,6 +520,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     # Now make a simple example using the custom projection.
     fig = plt.figure('Equal Earth Projection')
+    fig.clear()
     ax = fig.add_subplot(111, projection="equal_earth")
     p = ax.plot([-1, 1, 1], [-1, -1, 1], "o-")
     plt.grid(True)
