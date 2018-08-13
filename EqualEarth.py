@@ -428,7 +428,7 @@ class EqualEarthAxes(GeoAxes):
         path = self._gen_axes_path()
 
         spine = mspines.Spine(self, spine_type, path, linewidth=2)
-        #spine.set_transform(self.transAxes)
+#        spine.set_transform(self.transAxes)
         return {'geo': spine}
 
     class EqualEarthTransform(Transform):
@@ -457,14 +457,14 @@ class EqualEarthAxes(GeoAxes):
             A2 = -0.081106
             A3 = 0.000893
             A4 = 0.003796
-            r3 = np.sqrt(3.)
-            p_lat = np.arcsin(r3 * 0.5 * np.sin(lat))
-            l2 = p_lat**2
-            l6 = p_lat**6
+            M = np.sqrt(3.)/2.
+            p = np.arcsin(M * np.sin(lat))  # parametric latitude
+            p2 = p**2
+            p6 = p**6
 
-            x = 2. * r3 * long * np.cos(p_lat)/ \
-                (3.*(A1 + 3.*A2*l2 + l6*(7.*A3 + 9.*A4*l2)))
-            y = p_lat*(A1 + A2*l2 + l6*(A3 + A4*l2))
+            x = M * long * np.cos(p)/ \
+                (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))
+            y = p*(A1 + A2*p2 + p6*(A3 + A4*p2))
 
             return np.concatenate((x, y), 1)
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
@@ -490,11 +490,32 @@ class EqualEarthAxes(GeoAxes):
             self._resolution = resolution
 
         def transform_non_affine(self, xy):
+            """
+            Calculate the inverse transform using an iteration method, since
+            the exact inverse is not solvable. Method based on
+            https://beta.observablehq.com/@mbostock/equal-earth-projection
+            """
             x, y = xy.T
-            z = np.sqrt(1 - (x / 4) ** 2 - (y / 2) ** 2)
-            longitude = 2 * np.arctan((z * x) / (2 * (2 * z ** 2 - 1)))
-            latitude = np.arcsin(y*z)
-            return np.column_stack([longitude, latitude])
+            # Pre-compute some values
+            iterations = 12
+            limit = 1e-9
+            A1 = 1.340264
+            A2 = -0.081106
+            A3 = 0.000893
+            A4 = 0.003796
+            M = np.sqrt(3.)/2.
+            p = y  # estimate for parametric latitude
+            for i in range(iterations):
+                p2 = p**2
+                p6 = p**6
+                dy = p*(A1 + A2*p2 + p6*(A3 + A4*p2)) - y
+                fy = A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2)
+                dp = dy/fy
+                p -= dp
+                if np.abs(dp) < limit: break
+            long = M * x * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))/np.cos(p)
+            lat = np.arcsin(p)/M
+            return np.column_stack([long, lat])
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
 
         def inverted(self):
