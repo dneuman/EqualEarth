@@ -18,6 +18,7 @@ def GetAxes(figname, **kwargs):
     """
     Return matplotlib axes with Equal Earth projection
     """
+    plt.tight_layout()  # Maximizes use of space
     fig = plt.figure(figname)
     fig.clear()
     ax = fig.add_subplot(111, projection='equal_earth', **kwargs)
@@ -38,13 +39,11 @@ def DrawShapes(ax, sf, **kwargs):
     Draw the shapes in the supplied shapefile
     """
     for shape in sf.shapes():
+        if shape.shapeType != 5: continue
         verts = shape.points
-        verts.append(verts[0])
-        rads = np.deg2rad(verts)
         codes = [Path.MOVETO] + \
-                (len(verts)-2) * [Path.LINETO] + \
-                [Path.CLOSEPOLY]
-        path = Path(rads, codes)
+                (len(verts)-1) * [Path.LINETO]
+        path = Path(np.deg2rad(verts), codes)
         patch = patches.PathPatch(path, **kwargs)
         ax.add_patch(patch)
 
@@ -52,6 +51,7 @@ def DrawShapes(ax, sf, **kwargs):
 matplotlib.rcParams['axes.facecolor'] = 'lightcyan'
 matplotlib.rcParams['axes.edgecolor'] = 'k'
 matplotlib.rcParams['grid.color'] = 'k'
+matplotlib.rcParams['grid.alpha'] = .15
 
 ax = GetAxes('Equal Earth')
 sf = GetCoastlines()
