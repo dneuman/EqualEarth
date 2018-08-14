@@ -63,14 +63,13 @@ class GeoAxes(Axes):
 
     RESOLUTION = 75
 
-    def _init_axis(self, radians=False):
+    def _init_axis(self):
         self.xaxis = maxis.XAxis(self)
         self.yaxis = maxis.YAxis(self)
         # Do not register xaxis or yaxis with spines -- as done in
         # Axes._init_axis() -- until GeoAxes.xaxis.cla() works.
         # self.spines['geo'].register_axis(self.yaxis)
         self._update_transScale()
-        self.radians = radians
 
     def cla(self):
         Axes.cla(self)
@@ -346,16 +345,6 @@ class GeoAxes(Axes):
             .scale(1.0, self._longitude_cap * 2.0) \
             .translate(0.0, -self._longitude_cap)
 
-    def set_radians(self, radians):
-        """
-        Set the data input units to radians (True) if desired. The default
-        is false, which causes all input data to be converted to degrees.
-
-        Internal data is stored in radians, regardless of this setting.
-        """
-        self.radians = radians
-        self.transProjection.radians = radians
-
     def get_data_ratio(self):
         """
         Return the aspect ratio of the data itself.
@@ -419,11 +408,7 @@ class EqualEarthAxes(GeoAxes):
                  Path.LINETO,
                  Path.CLOSEPOLY,
                  ]
-        if self.transProjection.radians:
-            path = Path(verts, codes)
-        else:
-            path = Path(np.deg2rad(verts), codes)
-        return path
+        return Path(verts, codes)
 
     def _gen_axes_patch(self):
         """
@@ -442,7 +427,7 @@ class EqualEarthAxes(GeoAxes):
         path = self._gen_axes_path()
 
         spine = mspines.Spine(self, spine_type, path, linewidth=2)
-#        spine.set_transform(self.transAxes)
+        #spine.set_transform(self.transAxes)
         return {'geo': spine}
 
     class EqualEarthTransform(Transform):
@@ -461,11 +446,8 @@ class EqualEarthAxes(GeoAxes):
             """
             Transform.__init__(self)
             self._resolution = resolution
-            self.radians = True
 
         def transform_non_affine(self, ll):
-            if not self.radians:
-                ll = np.deg2rad(ll)
             long = ll[:, 0:1]
             lat = ll[:, 1:2]
 
@@ -474,14 +456,14 @@ class EqualEarthAxes(GeoAxes):
             A2 = -0.081106
             A3 = 0.000893
             A4 = 0.003796
-            M = np.sqrt(3.)/2.
-            p = np.arcsin(M * np.sin(lat))  # parametric latitude
-            p2 = p**2
-            p6 = p**6
+            r3 = np.sqrt(3.)
+            p_lat = np.arcsin(r3 * 0.5 * np.sin(lat))
+            l2 = p_lat**2
+            l6 = p_lat**6
 
-            x = M * long * np.cos(p)/ \
-                (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))
-            y = p*(A1 + A2*p2 + p6*(A3 + A4*p2))
+            x = 2. * r3 * long * np.cos(p_lat)/ \
+                (3.*(A1 + 3.*A2*l2 + l6*(7.*A3 + 9.*A4*l2)))
+            y = p_lat*(A1 + A2*l2 + l6*(A3 + A4*l2))
 
             return np.concatenate((x, y), 1)
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
@@ -507,11 +489,6 @@ class EqualEarthAxes(GeoAxes):
             self._resolution = resolution
 
         def transform_non_affine(self, xy):
-            """
-            Calculate the inverse transform using an iteration method, since
-            the exact inverse is not solvable. Method based on
-            https://beta.observablehq.com/@mbostock/equal-earth-projection
-            """
             x, y = xy.T
             # Pre-compute some values
             iterations = 12
@@ -532,9 +509,7 @@ class EqualEarthAxes(GeoAxes):
                 if np.abs(dp) < limit: break
             long = M * x * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))/np.cos(p)
             lat = np.arcsin(p)/M
-            result = np.column_stack([long, lat])
-            if not self.radians: result = np.rad2deg(result)
-            return result
+            return np.column_stack([long, lat])
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
 
         def inverted(self):
