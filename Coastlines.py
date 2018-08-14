@@ -56,4 +56,5 @@ matplotlib.rcParams['grid.alpha'] = .15
 ax = GetAxes('Equal Earth')
 sf = GetCoastlines()
 DrawShapes(ax, sf, lw=.5, edgecolor='k', facecolor='lightyellow', zorder=0.)
+plt.tight_layout()
 plt.show()

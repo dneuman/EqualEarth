@@ -539,5 +539,6 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111, projection="equal_earth")
     p = ax.plot([-1, 1, 1], [-1, -1, 1], "o-")
     plt.grid(True)
+    plt.tight_layout()
 
     plt.show()
