@@ -9,6 +9,8 @@ Based on code from:
 and projection described by Bojan Šavrič (@BojanSavric):
     https://doi.org/10.1080/13658816.2018.1504949
     https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
+as well as code from @mbostock:
+    https://beta.observablehq.com/@mbostock/equal-earth-projection
 
 Abstract:
     "The Equal Earth map projection is a new equal-area pseudocylindrical
@@ -18,6 +20,19 @@ Abstract:
      evaluate. Continental outlines are shown in a visually pleasing and
      balanced way."
 
+Usage
+-----
+Importing the module causes the Equal Earth projection to be registered with
+Matplotlib so that it can be used when creating a subplot::
+
+    >>>import EqualEarth
+    >>>fig = plt.figure('Equal Earth Projection')
+    >>>fig.clear()
+    >>>ax = fig.add_subplot(111, projection="equal_earth")
+    >>>plt.show()
+
+Note that all data must be in radians, so be sure to use ``np.deg2rad()``
+before plotting with data in degrees.
 """
 
 from __future__ import unicode_literals
