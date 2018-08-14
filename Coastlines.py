@@ -19,7 +19,6 @@ from Anaconda, but must be installed first::
 
 import shapefile
 import matplotlib.pyplot as plt
-from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib
 import numpy as np
@@ -36,78 +35,79 @@ def GetAxes(figname, **kwargs):
     plt.grid(True)
     return ax
 
-def GetCoastlines(path=None):
-    """
-    Return the shapefile containing coastlines
-    """
-    if not path:
-        path = 'ne_110m_land/ne_110m_land'
-    sf = shapefile.Reader(path)
-    return sf
-
 def DrawShapes(ax, sf, **kwargs):
-    """
-    Draw the shapes in the supplied shapefile
-    """
-    for shape in sf.shapes():
-        if shape.shapeType != 5: continue
-        verts = shape.points
-        codes = [Path.MOVETO] + \
-                (len(verts)-1) * [Path.LINETO]
-        path = Path(np.deg2rad(verts), codes)
-        patch = patches.PathPatch(path, **kwargs)
-        ax.add_patch(patch)
+    if sf.shapeType == shapefile.POLYGON:
+        for shape in sf.shapes():
+            verts = np.deg2rad(shape.points)
+            patch = patches.Polygon(verts, **kwargs)
+            ax.add_patch(patch)
+    elif sf.shapeType == shapefile.POLYLINE:
+        for shape in sf.shapes():
+            verts = np.deg2rad(shape.points)
+            path = patches.mlines.Path(verts)
+            patch = patches.PathPatch(path, **kwargs)
+            ax.add_patch(patch)
 
-def LimEllipse(xy, width, height):
-    # Uses a path insteat of an ellipse patch so that the values can be
-    # limited to within the map projections.
-    resolution = 75
-    x, y = xy
-    t = np.linspace(0., 2.*np.pi, resolution)
-    t = np.r_[t, [0]]
-    longs = np.clip(width * np.cos(t) + x, -np.pi, np.pi)
-    lats = np.clip(height * np.sin(t) + y, -np.pi/2., np.pi/2.)
-    verts = np.column_stack([longs, lats])
-    codes = [Path.MOVETO] + \
-            (len(verts)-2) * [Path.LINETO] + \
-            [Path.CLOSEPOLY]
-    return Path(verts, codes)
-
-
-def DrawEllipse(ax, ll, width):
-    R = 6371.  # radius of Earth in km
+def DrawEllipse(ax, ll, width_deg, resolution=50):
     long, lat = ll
-    # circumference is 2πR, so angle of longitude is:
-    y = width/(2.*np.pi*R)
-    x = y/np.cos(lat)
-#    p = patches.Ellipse((long, lat), x, y,
-    p = patches.PathPatch(LimEllipse((long, lat), x, y),
-                        color='r', alpha=.4, edgecolor=None, zorder=5.)
-    ax.add_patch(p)
+    # Use a path instead of the regular Ellipse patch to improve resolution
+    height = np.deg2rad(width_deg)/2.  # use as radius, not diameter
+    width = height/np.cos(lat)
+    t = np.linspace(0., 2.*np.pi, resolution)
+    t = np.r_[t, [0]]  # append starting point to close path
+    longs = width * np.cos(t) + long
+    lats = height * np.sin(t) + lat
+    verts = np.column_stack([longs, lats])
+    patch = patches.Polygon(verts,
+                        facecolor='r', alpha=.4, edgecolor='none', zorder=5.)
+    ax.add_patch(patch)
 
-def DrawTissot(ax):
+def DrawTissot(ax, width=10., resolution=50):
+    """
+    Draw Tissot Indicatrices of Deformation over the map projection to show
+    how the projection deforms equally-sized circles at various points
+    on the map.
+
+    Parameters
+    ----------
+    ax : axes (subplot) to draw on
+    width : (float default 5.) width of circles in degrees of latitude
+    resolution : (int default 50) Number of points in circle
+    """
     degrees = 30
-    width = 5000.
     for lat in range(-degrees, degrees+1, degrees):
         for long in range(-180, 181, degrees):
-            DrawEllipse(ax, np.deg2rad([long, lat]), width)
+            DrawEllipse(ax, np.deg2rad([long, lat]), width, resolution)
     for lat in [-60, 60]:
         for long in range(-180, 181, 2*degrees):
-            DrawEllipse(ax, np.deg2rad([long, lat]), width)
+            DrawEllipse(ax, np.deg2rad([long, lat]), width, resolution)
     for lat in [-90, 90]:
-        DrawEllipse(ax, np.deg2rad([0, lat]), width)
+        DrawEllipse(ax, np.deg2rad([0, lat]), width, resolution)
+    ax.set_title('Equal Earth Projection with\n'
+                 'Tissot Indicatrices of Deformation')
 
 
+yellow = '#FEFEE6'
+blue = '#CEEAFD'
 matplotlib.rcParams['figure.facecolor'] = 'w'
-matplotlib.rcParams['axes.facecolor'] = '#CEEAFD'
+matplotlib.rcParams['axes.facecolor'] = blue
 matplotlib.rcParams['axes.edgecolor'] = 'k'
 matplotlib.rcParams['grid.color'] = 'k'
 matplotlib.rcParams['grid.alpha'] = .15
 
-ax = GetAxes('Equal Earth')
-sf = GetCoastlines()
-DrawShapes(ax, sf, lw=.5, edgecolor='k', facecolor='#FEFEE6', zorder=0.)
+paths = ['ne_110m_land/ne_110m_land',
+         'ne_110m_coastline/ne_110m_coastline',
+         'ne_110m_lakes/ne_110m_lakes']
+#      land    coast   lakes
+ecs = ['none', 'k',    'k']  # edgecolors
+fcs = [yellow, 'none', blue] # facecolors
+z = 0.
+
+ax = GetAxes('Equal Earth Tissot')
+for path, ec, fc in zip(paths, ecs, fcs):
+    sf = shapefile.Reader(path)
+    DrawShapes(ax, sf, lw=.25, edgecolor=ec, facecolor=fc, zorder=z)
+    z += .1
 DrawTissot(ax)
-ax.set_title('Equal Earth Projection with Tissot Indicatrices of Deformation')
-plt.tight_layout()
+
 plt.show()

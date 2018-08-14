@@ -19,7 +19,7 @@ Abstract:
      evaluate. Continental outlines are shown in a visually pleasing and
      balanced way."
 
-![Example](charts/Equal_Earth.png)
+![Example](charts/Equal_Earth_Tissot)
 
 Usage
 -----
@@ -28,9 +28,11 @@ Matplotlib so that it can be used when creating a subplot::
 
     >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
+    >>>longs = [-110, 50, 50]
+    >>>lats = [20, 20, -40]
     >>>fig = plt.figure('Equal Earth Projection')
-    >>>fig.clear()
     >>>ax = fig.add_subplot(111, projection="equal_earth")
+    >>>ax.plot(np.deg2rad(longs), np.deg2rad(lats))
     >>>plt.show()
 
 Note that all data must be in radians, so be sure to use ``np.deg2rad()``
@@ -40,8 +42,6 @@ Issues
 ------
 * Does not accept data in degrees, so data must be converted to radians first.
 * The figure facecolor gets overdrawn with the axes facecolor
-* Drawing outside the axes is not cut off (may be an inherent matplotlib
-  limitation).
 
 @Author: Dan Neuman (@dan613)
 
