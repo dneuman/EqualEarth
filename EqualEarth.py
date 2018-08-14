@@ -485,6 +485,12 @@ class EqualEarthAxes(GeoAxes):
             long = ll[:, 0:1]
             lat = ll[:, 1:2]
 
+            # Limit coordinates to map dimensions
+            xlim = np.pi
+            ylim = np.pi/2.
+            long = np.clip(long, -xlim, xlim)
+            lat = np.clip(lat, -ylim, ylim)
+
             # Pre-compute some values
             A1 = 1.340264
             A2 = -0.081106
