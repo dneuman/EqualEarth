@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Aug 12 19:42:07 2018
+Coastlines using Equal Earth Projection
+=======================================
 
-@author: dan
+Example map showing how to use the Equal Earth Projection, and drawing
+Tissot Indicatrices of Deformation to show how this projection distorts
+land masses.
+
+Requirements
+------------
+shapefile (from pyshp) is required to read the map data. This is available
+from Anaconda, but must be installed first::
+
+    >>>conda install shapefile
+
 """
 
 import shapefile
@@ -12,7 +23,7 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib
 import numpy as np
-import EqualEarth
+import EqualEarth  # Automatically registers in matplotlib on import
 
 def GetAxes(figname, **kwargs):
     """
@@ -69,14 +80,14 @@ def DrawTissot(ax):
 
 
 matplotlib.rcParams['figure.facecolor'] = 'w'
-matplotlib.rcParams['axes.facecolor'] = 'w'
+matplotlib.rcParams['axes.facecolor'] = '#CEEAFD'
 matplotlib.rcParams['axes.edgecolor'] = 'k'
 matplotlib.rcParams['grid.color'] = 'k'
 matplotlib.rcParams['grid.alpha'] = .15
 
 ax = GetAxes('Equal Earth')
 sf = GetCoastlines()
-DrawShapes(ax, sf, lw=.5, edgecolor='k', facecolor='lightyellow', zorder=0.)
+DrawShapes(ax, sf, lw=.5, edgecolor='k', facecolor='#FEFEE6', zorder=0.)
 DrawTissot(ax)
 ax.set_title('Equal Earth Projection with Tissot Indicatrices of Deformation')
 plt.tight_layout()

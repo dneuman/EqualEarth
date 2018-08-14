@@ -33,6 +33,15 @@ Matplotlib so that it can be used when creating a subplot::
 
 Note that all data must be in radians, so be sure to use ``np.deg2rad()``
 before plotting with data in degrees.
+
+Issues
+------
+* Does not accept data in degrees, so data must be converted to radians first.
+* The figure facecolor gets overdrawn with the axes facecolor
+* Drawing outside the axes is not cut off (may be an inherent matplotlib
+  limitation).
+
+@Author: Dan Neuman (@dan613)
 """
 
 from __future__ import unicode_literals
@@ -434,7 +443,8 @@ class EqualEarthAxes(GeoAxes):
         projection.
         """
         path = self._gen_axes_path()
-        patch = matplotlib.patches.PathPatch(path)
+        patch = matplotlib.patches.PathPatch(path,
+                                             facecolor=rcParams['axes.facecolor'])
         return patch
 
     def _gen_axes_spines(self):
