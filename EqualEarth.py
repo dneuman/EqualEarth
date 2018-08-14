@@ -448,6 +448,9 @@ class EqualEarthAxes(GeoAxes):
             self._resolution = resolution
 
         def transform_non_affine(self, ll):
+            """
+            Core transform, done in radians.
+            """
             long = ll[:, 0:1]
             lat = ll[:, 1:2]
 
@@ -456,14 +459,13 @@ class EqualEarthAxes(GeoAxes):
             A2 = -0.081106
             A3 = 0.000893
             A4 = 0.003796
-            r3 = np.sqrt(3.)
-            p_lat = np.arcsin(r3 * 0.5 * np.sin(lat))
-            l2 = p_lat**2
-            l6 = p_lat**6
-
-            x = 2. * r3 * long * np.cos(p_lat)/ \
-                (3.*(A1 + 3.*A2*l2 + l6*(7.*A3 + 9.*A4*l2)))
-            y = p_lat*(A1 + A2*l2 + l6*(A3 + A4*l2))
+            M = np.sqrt(3.)/2.
+            p = np.arcsin(M * np.sin(lat))  # parametric latitude
+            p2 = p**2
+            p6 = p**6
+            x = long * np.cos(p)/ \
+                (M * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2)))
+            y = p*(A1 + A2*p2 + p6*(A3 + A4*p2))
 
             return np.concatenate((x, y), 1)
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
@@ -489,6 +491,11 @@ class EqualEarthAxes(GeoAxes):
             self._resolution = resolution
 
         def transform_non_affine(self, xy):
+            """
+            Calculate the inverse transform using an iteration method, since
+            the exact inverse is not solvable. Method based on
+            https://beta.observablehq.com/@mbostock/equal-earth-projection
+            """
             x, y = xy.T
             # Pre-compute some values
             iterations = 12
