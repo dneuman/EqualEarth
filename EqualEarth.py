@@ -537,8 +537,7 @@ if __name__ == '__main__':
     fig = plt.figure('Equal Earth Projection')
     fig.clear()
     ax = fig.add_subplot(111, projection="equal_earth")
-    ax.set_radians(False)
-    p = ax.plot([-60, 60, 60], [-60, -60, 60], "o-")
+    p = ax.plot([-1, 1, 1], [-1, -1, 1], "o-")
     plt.grid(True)
 
     plt.show()
