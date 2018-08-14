@@ -58,25 +58,44 @@ def DrawShapes(ax, sf, **kwargs):
         patch = patches.PathPatch(path, **kwargs)
         ax.add_patch(patch)
 
+def LimEllipse(xy, width, height):
+    # Uses a path insteat of an ellipse patch so that the values can be
+    # limited to within the map projections.
+    resolution = 75
+    x, y = xy
+    t = np.linspace(0., 2.*np.pi, resolution)
+    t = np.r_[t, [0]]
+    longs = np.clip(width * np.cos(t) + x, -np.pi, np.pi)
+    lats = np.clip(height * np.sin(t) + y, -np.pi/2., np.pi/2.)
+    verts = np.column_stack([longs, lats])
+    codes = [Path.MOVETO] + \
+            (len(verts)-2) * [Path.LINETO] + \
+            [Path.CLOSEPOLY]
+    return Path(verts, codes)
+
+
 def DrawEllipse(ax, ll, width):
     R = 6371.  # radius of Earth in km
     long, lat = ll
     # circumference is 2πR, so angle of longitude is:
     y = width/(2.*np.pi*R)
     x = y/np.cos(lat)
-    p = patches.Ellipse((long, lat), x, y,
+#    p = patches.Ellipse((long, lat), x, y,
+    p = patches.PathPatch(LimEllipse((long, lat), x, y),
                         color='r', alpha=.4, edgecolor=None, zorder=5.)
     ax.add_patch(p)
 
 def DrawTissot(ax):
     degrees = 30
-    width = 7500.
+    width = 5000.
     for lat in range(-degrees, degrees+1, degrees):
         for long in range(-180, 181, degrees):
             DrawEllipse(ax, np.deg2rad([long, lat]), width)
     for lat in [-60, 60]:
         for long in range(-180, 181, 2*degrees):
             DrawEllipse(ax, np.deg2rad([long, lat]), width)
+    for lat in [-90, 90]:
+        DrawEllipse(ax, np.deg2rad([0, lat]), width)
 
 
 matplotlib.rcParams['figure.facecolor'] = 'w'
