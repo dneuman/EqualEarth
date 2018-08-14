@@ -532,6 +532,7 @@ class EqualEarthAxes(GeoAxes):
                 if np.abs(dp) < limit: break
             long = M * x * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))/np.cos(p)
             lat = np.arcsin(p)/M
+            result = np.column_stack([long, lat])
             if not self.radians: result = np.rad2deg(result)
             return result
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
