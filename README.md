@@ -19,7 +19,7 @@ Abstract:
      evaluate. Continental outlines are shown in a visually pleasing and
      balanced way."
 
-![Example](charts/Equal_Earth_Tissot)
+![Example](charts/Equal_Earth_Tissot.png)
 
 Usage
 -----
