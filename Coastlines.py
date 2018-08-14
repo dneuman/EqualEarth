@@ -47,8 +47,29 @@ def DrawShapes(ax, sf, **kwargs):
         patch = patches.PathPatch(path, **kwargs)
         ax.add_patch(patch)
 
+def DrawEllipse(ax, ll, width):
+    R = 6371.  # radius of Earth in km
+    long, lat = ll
+    # circumference is 2πR, so angle of longitude is:
+    y = width/(2.*np.pi*R)
+    x = y/np.cos(lat)
+    p = patches.Ellipse((long, lat), x, y,
+                        color='r', alpha=.4, edgecolor=None, zorder=5.)
+    ax.add_patch(p)
 
-matplotlib.rcParams['axes.facecolor'] = 'lightcyan'
+def DrawTissot(ax):
+    degrees = 30
+    width = 7500.
+    for lat in range(-degrees, degrees+1, degrees):
+        for long in range(-180, 181, degrees):
+            DrawEllipse(ax, np.deg2rad([long, lat]), width)
+    for lat in [-60, 60]:
+        for long in range(-180, 181, 2*degrees):
+            DrawEllipse(ax, np.deg2rad([long, lat]), width)
+
+
+matplotlib.rcParams['figure.facecolor'] = 'w'
+matplotlib.rcParams['axes.facecolor'] = 'w'
 matplotlib.rcParams['axes.edgecolor'] = 'k'
 matplotlib.rcParams['grid.color'] = 'k'
 matplotlib.rcParams['grid.alpha'] = .15
@@ -56,5 +77,7 @@ matplotlib.rcParams['grid.alpha'] = .15
 ax = GetAxes('Equal Earth')
 sf = GetCoastlines()
 DrawShapes(ax, sf, lw=.5, edgecolor='k', facecolor='lightyellow', zorder=0.)
+DrawTissot(ax)
+ax.set_title('Equal Earth Projection with Tissot Indicatrices of Deformation')
 plt.tight_layout()
 plt.show()
