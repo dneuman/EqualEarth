@@ -19,6 +19,8 @@ Abstract:
      evaluate. Continental outlines are shown in a visually pleasing and
      balanced way."
 
+![Example](charts/Equal_Earth.png)
+
 Usage
 -----
 Importing the module causes the Equal Earth projection to be registered with
