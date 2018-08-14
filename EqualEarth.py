@@ -63,13 +63,14 @@ class GeoAxes(Axes):
 
     RESOLUTION = 75
 
-    def _init_axis(self):
+    def _init_axis(self, radians=False):
         self.xaxis = maxis.XAxis(self)
         self.yaxis = maxis.YAxis(self)
         # Do not register xaxis or yaxis with spines -- as done in
         # Axes._init_axis() -- until GeoAxes.xaxis.cla() works.
         # self.spines['geo'].register_axis(self.yaxis)
         self._update_transScale()
+        self.radians = radians
 
     def cla(self):
         Axes.cla(self)
@@ -345,6 +346,16 @@ class GeoAxes(Axes):
             .scale(1.0, self._longitude_cap * 2.0) \
             .translate(0.0, -self._longitude_cap)
 
+    def set_radians(self, radians):
+        """
+        Set the data input units to radians (True) if desired. The default
+        is false, which causes all input data to be converted to degrees.
+
+        Internal data is stored in radians, regardless of this setting.
+        """
+        self.radians = radians
+        self.transProjection.radians = radians
+
     def get_data_ratio(self):
         """
         Return the aspect ratio of the data itself.
@@ -408,7 +419,10 @@ class EqualEarthAxes(GeoAxes):
                  Path.LINETO,
                  Path.CLOSEPOLY,
                  ]
-        path = Path(verts, codes)
+        if self.transProjection.radians:
+            path = Path(verts, codes)
+        else:
+            path = Path(np.deg2rad(verts), codes)
         return path
 
     def _gen_axes_patch(self):
@@ -447,8 +461,11 @@ class EqualEarthAxes(GeoAxes):
             """
             Transform.__init__(self)
             self._resolution = resolution
+            self.radians = True
 
         def transform_non_affine(self, ll):
+            if not self.radians:
+                ll = np.deg2rad(ll)
             long = ll[:, 0:1]
             lat = ll[:, 1:2]
 
@@ -515,7 +532,8 @@ class EqualEarthAxes(GeoAxes):
                 if np.abs(dp) < limit: break
             long = M * x * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))/np.cos(p)
             lat = np.arcsin(p)/M
-            return np.column_stack([long, lat])
+            if not self.radians: result = np.rad2deg(result)
+            return result
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
 
         def inverted(self):
@@ -543,7 +561,8 @@ if __name__ == '__main__':
     fig = plt.figure('Equal Earth Projection')
     fig.clear()
     ax = fig.add_subplot(111, projection="equal_earth")
-    p = ax.plot([-1, 1, 1], [-1, -1, 1], "o-")
+    ax.set_radians(False)
+    p = ax.plot([-60, 60, 60], [-60, -60, 60], "o-")
     plt.grid(True)
 
     plt.show()
