@@ -2,12 +2,12 @@ Equal Earth Projection
 ======================
 
 Based on code from:
-    https://matplotlib.org/gallery/misc/custom_projection.html
+* https://matplotlib.org/gallery/misc/custom_projection.html
 and projection described by Bojan Šavrič (@BojanSavric):
-    https://doi.org/10.1080/13658816.2018.1504949
-    https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
+* https://doi.org/10.1080/13658816.2018.1504949
+* https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
 as well as code from @mbostock:
-    https://beta.observablehq.com/@mbostock/equal-earth-projection
+* https://beta.observablehq.com/@mbostock/equal-earth-projection
 
 Abstract:
     "The Equal Earth map projection is a new equal-area pseudocylindrical
@@ -22,6 +22,7 @@ Usage
 Importing the module causes the Equal Earth projection to be registered with
 Matplotlib so that it can be used when creating a subplot::
 
+    >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
     >>>fig = plt.figure('Equal Earth Projection')
     >>>fig.clear()
