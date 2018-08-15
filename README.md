@@ -32,7 +32,6 @@ where:
 * A3 =  0.000893
 * A4 =  0.003796
 
-
 Usage
 -----
 Importing the module causes the Equal Earth projection to be registered with
