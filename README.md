@@ -19,7 +19,19 @@ Abstract:
      evaluate. Continental outlines are shown in a visually pleasing and
      balanced way."
 
-![Example](charts/Equal_Earth_Tissot)
+![Example](charts/Equal_Earth_Tissot.png)
+
+![Equations](charts/equations.jpeg)
+
+where:
+
+* λ and φ are the longitude and the latitude, respectively
+* θ is a parametric latitude
+* A1 =  1.340264
+* A2 = -0.081106
+* A3 =  0.000893
+* A4 =  0.003796
+
 
 Usage
 -----
