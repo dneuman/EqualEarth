@@ -445,20 +445,22 @@ class EqualEarthAxes(GeoAxes):
         background of the plot.  It should be a subclass of Patch.
 
         In this case, it is a closed square path that is warped by the
-        projection.
+        projection. Note that it must be in Axes space (0, 1).
         """
-        verts = self._gen_axes_verts()
-        patch = patches.Polygon(verts,
-                                facecolor=rcParams['axes.facecolor'])
+        verts = self._gen_axes_verts()  # Data space
+        path = patches.Path(verts, closed=True)
+        # convert to projection space with iterations on path
+        ipath = self.transProjection.transform_path_non_affine(path)
+        # convert to axes space
+        apath = self.transAffine.transform_path(ipath)  # Axes space
+        patch = patches.PathPatch(apath)
         return patch
 
     def _gen_axes_spines(self):
         spine_type = 'circle'
         verts = self._gen_axes_verts()
-        path = patches.mlines.Path(verts)
-
-        spine = mspines.Spine(self, spine_type, path, linewidth=5)
-        #spine.set_transform(self.transAxes)
+        path = patches.Path(verts, closed=True)
+        spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
 
     class EqualEarthTransform(Transform):
@@ -484,12 +486,6 @@ class EqualEarthAxes(GeoAxes):
             """
             long = ll[:, 0:1]
             lat = ll[:, 1:2]
-
-            # Limit coordinates to map dimensions
-            xlim = np.pi
-            ylim = np.pi/2.
-            long = np.clip(long, -xlim, xlim)
-            lat = np.clip(lat, -ylim, ylim)
 
             # Pre-compute some values
             A1 = 1.340264
@@ -578,7 +574,7 @@ register_projection(EqualEarthAxes)
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     # Now make a simple example using the custom projection.
-    longs = [-110, 100, 100, -110]
+    longs = [-200, 100, 100, -200]
     lats = [40, 40, -40, 40]
     fig = plt.figure('Equal Earth Projection')
     fig.clear()

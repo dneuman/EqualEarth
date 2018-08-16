@@ -59,7 +59,6 @@ as well as code from @mbostock:
 Issues
 ------
 * Does not accept data in degrees, so data must be converted to radians first.
-* The figure facecolor gets overdrawn with the axes facecolor
 
 @Author: Dan Neuman (@dan613)
 
