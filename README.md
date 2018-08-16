@@ -12,12 +12,12 @@ as well as code from @mbostock:
 * https://beta.observablehq.com/@mbostock/equal-earth-projection
 
 Abstract:
-    "The Equal Earth map projection is a new equal-area pseudocylindrical
-     projection for world maps. It is inspired by the widely used Robinson
-     projection, but unlike the Robinson projection, retains the relative size
-     of areas. The projection equations are simple to implement and fast to
-     evaluate. Continental outlines are shown in a visually pleasing and
-     balanced way."
+>The Equal Earth map projection is a new equal-area pseudocylindrical
+>projection for world maps. It is inspired by the widely used Robinson
+>projection, but unlike the Robinson projection, retains the relative size
+>of areas. The projection equations are simple to implement and fast to
+>evaluate. Continental outlines are shown in a visually pleasing and
+>balanced way.
 
 ![Example](charts/Equal_Earth_Tissot.png)
 
