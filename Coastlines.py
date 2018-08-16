@@ -184,6 +184,9 @@ if __name__ == '__main__':
 
     ax = GetAxes('Equal Earth Tissot', figprops={'figsize': (10., 6.)})
     DrawCoastlines(ax)
+    ax.yaxis.set_ticklabels([])
+    ax.xaxis.set_ticklabels([])
+    plt.tight_layout()  # redo autolayout
     DrawTissot(ax)
 
     plt.show()
