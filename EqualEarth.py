@@ -33,7 +33,7 @@ Matplotlib so that it can be used when creating a subplot::
 
     >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
-    >>>longs = [-110, 100, 100, -110]
+    >>>longs = [-200, 100, 100, -200]
     >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
     >>>ax = fig.add_subplot(111, projection="equal_earth")
@@ -47,9 +47,6 @@ before plotting with data in degrees.
 Issues
 ------
 * Does not accept data in degrees, so data must be converted to radians first.
-* The figure facecolor gets overdrawn with the axes facecolor
-* Drawing outside the axes is not cut off (may be an inherent matplotlib
-  limitation).
 
 @Author: Dan Neuman (@dan613)
 """
