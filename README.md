@@ -1,23 +1,18 @@
 Equal Earth Projection
 ======================
+The Equal Earth map projection is a ``matplotlib`` add-on:
 
-Based on code from:
-* https://matplotlib.org/gallery/misc/custom_projection.html
-
-and projection described by Bojan Šavrič (@BojanSavric):
-* https://doi.org/10.1080/13658816.2018.1504949
-* https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
-
-as well as code from @mbostock:
-* https://beta.observablehq.com/@mbostock/equal-earth-projection
-
-Abstract:
 >The Equal Earth map projection is a new equal-area pseudocylindrical
 >projection for world maps. It is inspired by the widely used Robinson
 >projection, but unlike the Robinson projection, retains the relative size
 >of areas. The projection equations are simple to implement and fast to
 >evaluate. Continental outlines are shown in a visually pleasing and
 >balanced way.
+
+Projection developed by Bojan Šavrič (@BojanSavric):
+* https://doi.org/10.1080/13658816.2018.1504949
+* https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
+
 
 ![Example](charts/Equal_Earth_Tissot.png)
 
@@ -51,6 +46,15 @@ Matplotlib so that it can be used when creating a subplot::
 
 Note that all data must be in radians, so be sure to use ``np.deg2rad()``
 before plotting with data in degrees.
+
+Sources
+-------
+Based on code from:
+* https://matplotlib.org/gallery/misc/custom_projection.html
+
+as well as code from @mbostock:
+* https://beta.observablehq.com/@mbostock/equal-earth-projection
+
 
 Issues
 ------
