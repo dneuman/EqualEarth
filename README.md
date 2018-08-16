@@ -39,12 +39,15 @@ Matplotlib so that it can be used when creating a subplot::
 
     >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
-    >>>longs = [-110, 50, 50]
-    >>>lats = [20, 20, -40]
+    >>>longs = [-110, 100, 100]
+    >>>lats = [40, 40, -40]
     >>>fig = plt.figure('Equal Earth Projection')
     >>>ax = fig.add_subplot(111, projection="equal_earth")
     >>>ax.plot(np.deg2rad(longs), np.deg2rad(lats))
+    >>>plt.grid(True)
     >>>plt.show()
+
+![Result](charts/result.png)
 
 Note that all data must be in radians, so be sure to use ``np.deg2rad()``
 before plotting with data in degrees.
