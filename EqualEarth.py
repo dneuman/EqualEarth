@@ -8,7 +8,8 @@ Based on code from:
 
 * https://matplotlib.org/gallery/misc/custom_projection.html
 
-and projection described by Bojan Šavrič (@BojanSavric):
+and projection described by Bojan Šavrič (@BojanSavric), Tom Patterson and
+Bernhard Jenny:
 
 * https://doi.org/10.1080/13658816.2018.1504949
 * https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection

@@ -1,6 +1,8 @@
 Equal Earth Projection
 ======================
-The Equal Earth map projection is a ``matplotlib`` add-on:
+The Equal Earth map projection is a ``matplotlib`` add-on based on the
+projection developed by Bojan Šavrič (@BojanSavric), Tom Patterson and
+Bernhard Jenny:
 
 >The Equal Earth map projection is a new equal-area pseudocylindrical
 >projection for world maps. It is inspired by the widely used Robinson
@@ -9,7 +11,6 @@ The Equal Earth map projection is a ``matplotlib`` add-on:
 >evaluate. Continental outlines are shown in a visually pleasing and
 >balanced way.
 
-Projection developed by Bojan Šavrič (@BojanSavric):
 * https://doi.org/10.1080/13658816.2018.1504949
 * https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
 
