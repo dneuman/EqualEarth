@@ -221,13 +221,9 @@ class GeoAxes(Axes):
             Affine2D().translate(8.0, 0.0)
 
     def _get_affine_transform(self):
-        if self._rad:
-            lim = np.pi / 2.
-        else:
-            lim = 90.
         transform = self._get_core_transform(1)
-        xscale, _ = transform.transform_point((lim * 2., 0))
-        _, yscale = transform.transform_point((0, lim))
+        xscale, _ = transform.transform_point((np.pi, 0))
+        _, yscale = transform.transform_point((0, np.pi / 2))
         return Affine2D() \
             .scale(0.5 / xscale, 0.5 / yscale) \
             .translate(0.5, 0.5)
@@ -429,6 +425,18 @@ class EqualEarthAxes(GeoAxes):
     # i.e. ``subplot(111, projection='equal_earth')``.
     name = 'equal_earth'
 
+    def __init__(self, *args, rad=True, **kwargs):
+
+        self._rad = rad
+        if rad:
+            self._limit = np.pi * 0.5
+        else:
+            self._limit = 90.
+        self._longitude_cap = self._limit
+        GeoAxes.__init__(self, *args, **kwargs)
+        self.set_aspect(0.5, adjustable='box', anchor='C')
+        self.cla()
+
     def cla(self):
         Axes.cla(self)
 
@@ -445,18 +453,32 @@ class EqualEarthAxes(GeoAxes):
 
         self.grid(rcParams['axes.grid'])
 
-        Axes.set_xlim(self, -np.pi, np.pi)
-        Axes.set_ylim(self, -np.pi / 2.0, np.pi / 2.0)
+        lim = self._limit
+        Axes.set_xlim(self, -lim * 2., lim * 2.)
+        Axes.set_ylim(self, -lim, lim)
+
+    def _get_core_transform(self, resolution):
+        return self.EqualEarthTransform(resolution, self._rad)
+
+    def _get_affine_transform(self):
+        lim = self._limit
+        transform = self._get_core_transform(1)
+        xscale, _ = transform.transform_point((lim * 2, 0))
+        _, yscale = transform.transform_point((0, lim))
+        return Affine2D() \
+            .scale(0.5 / xscale, 0.5 / yscale) \
+            .translate(0.5, 0.5)
 
     def _gen_axes_verts(self):
         """
         Create the path that defines the outline of the projection
         """
-        verts = [(-np.pi, -np.pi/2), # left, bottom
-                 (-np.pi,  np.pi/2), # left, top
-                 ( np.pi,  np.pi/2), # right, top
-                 ( np.pi, -np.pi/2), # right, bottom
-                 (-np.pi, -np.pi/2)] # close path
+        lim = self._limit
+        verts = [(-lim * 2, -lim), # left, bottom
+                 (-lim * 2,  lim), # left, top
+                 ( lim * 2,  lim), # right, top
+                 ( lim * 2, -lim), # right, bottom
+                 (-lim * 2, -lim)] # close path
 
         return verts
 
@@ -484,6 +506,51 @@ class EqualEarthAxes(GeoAxes):
         spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
 
+    def set_longitude_grid(self, degrees):
+        """
+        Set the number of degrees between each longitude grid.
+
+        This is an example method that is specific to this projection
+        class -- it provides a more convenient interface to set the
+        ticking than set_xticks would.
+        """
+        # Skip -180 and 180, which are the fixed limits.
+        grid = np.arange(-180 + degrees, 180, degrees)
+        if self._rad: grid = np.deg2rad(grid)
+        self.xaxis.set_major_locator(FixedLocator(grid))
+        self.xaxis.set_major_formatter(self.ThetaFormatter(degrees))
+
+    def set_latitude_grid(self, degrees):
+        """
+        Set the number of degrees between each longitude grid.
+
+        This is an example method that is specific to this projection
+        class -- it provides a more convenient interface than
+        set_yticks would.
+        """
+        # Skip -90 and 90, which are the fixed limits.
+        grid = np.arange(-90 + degrees, 90, degrees)
+        if self._rad: grid = np.deg2rad(grid)
+        self.yaxis.set_major_locator(FixedLocator(grid))
+        self.yaxis.set_major_formatter(self.ThetaFormatter(degrees))
+
+    def set_longitude_grid_ends(self, degrees):
+        """
+        Set the latitude(s) at which to stop drawing the longitude grids.
+
+        Often, in geographic projections, you wouldn't want to draw
+        longitude gridlines near the poles.  This allows the user to
+        specify the degree at which to stop drawing longitude grids.
+        """
+        if self._rad:
+            self._longitude_cap = np.deg2rad(degrees)
+        else:
+            self._longitude_cap = degrees
+        self._xaxis_pretransform \
+            .clear() \
+            .scale(1.0, self._longitude_cap * 2.0) \
+            .translate(0.0, -self._longitude_cap)
+
     class EqualEarthTransform(Transform):
         """
         The base Equal Earth transform.
@@ -492,19 +559,22 @@ class EqualEarthAxes(GeoAxes):
         output_dims = 2
         is_separable = False
 
-        def __init__(self, resolution):
+        def __init__(self, resolution, rad):
             """
             Create a new Equal Earth transform.  Resolution is the number of
             steps to interpolate between each input line segment to approximate
             its path in curved Equal Earth space.
             """
             self._resolution = resolution
+            self._rad = rad
             Transform.__init__(self)
 
         def transform_non_affine(self, ll):
             """
-            Core transform, done in radians.
+            Core transform, done in radians. Converts degree data to radians
+            if self._rad is False.
             """
+            if not self._rad: ll = np.deg2rad(ll)
             long = ll[:, 0:1]
             lat = ll[:, 1:2]
 
@@ -520,6 +590,8 @@ class EqualEarthAxes(GeoAxes):
             x = long * np.cos(p)/ \
                 (M * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2)))
             y = p*(A1 + A2*p2 + p6*(A3 + A4*p2))
+            result = np.concatenate((x, y), 1)
+            if not self._rad: result = np.rad2deg(result)
 
             return np.concatenate((x, y), 1)
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
@@ -532,7 +604,8 @@ class EqualEarthAxes(GeoAxes):
             Transform.transform_path_non_affine.__doc__
 
         def inverted(self):
-            return EqualEarthAxes.InvertedEqualEarthTransform(self._resolution)
+            return EqualEarthAxes.InvertedEqualEarthTransform(self._resolution,
+                                                              self._rad)
         inverted.__doc__ = Transform.inverted.__doc__
 
     class InvertedEqualEarthTransform(Transform):
@@ -540,8 +613,9 @@ class EqualEarthAxes(GeoAxes):
         output_dims = 2
         is_separable = False
 
-        def __init__(self, resolution):
+        def __init__(self, resolution, rad):
             Transform.__init__(self)
+            self._rad = rad
             self._resolution = resolution
 
         def transform_non_affine(self, xy):
@@ -576,21 +650,6 @@ class EqualEarthAxes(GeoAxes):
         def inverted(self):
             return EqualEarthAxes.EqualEarthTransform(self._resolution)
         inverted.__doc__ = Transform.inverted.__doc__
-
-    def __init__(self, *args, rad=True, **kwargs):
-
-        self._rad = rad
-        if rad:
-            self._limit = np.pi * 0.5
-        else:
-            self._limit = 90.
-        self._longitude_cap = self._limit
-        GeoAxes.__init__(self, *args, **kwargs)
-        self.set_aspect(0.5, adjustable='box', anchor='C')
-        self.cla()
-
-    def _get_core_transform(self, resolution):
-        return self.EqualEarthTransform(resolution)
 
 
 # Now register the projection with matplotlib so the user can select
