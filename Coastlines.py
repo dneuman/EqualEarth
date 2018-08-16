@@ -24,18 +24,41 @@ import matplotlib
 import numpy as np
 import EqualEarth  # Automatically registers in matplotlib on import
 
-def GetAxes(figname, **kwargs):
+def GetAxes(figname='Equal Earth Projection', figprops=None, **kwargs):
     """
     Return matplotlib axes with Equal Earth projection
+
+    Parameters
+    ----------
+    figname : int or str, optional, default: 'Equal Earth Projection'
+        Name of figure. If a number is given, will default to
+        'Figure {figname}'
+    figprops : dict, optional, default: None
+        Dictionary of properties to send to the figure during creation.
+    kwargs : optional
+        Keyword arguments will be sent to the plt.Axes object during creation.
     """
-    plt.tight_layout()  # Maximizes use of space
-    fig = plt.figure(figname)
+    fig = plt.figure(figname, **figprops)
     fig.clear()
     ax = fig.add_subplot(111, projection='equal_earth', **kwargs)
+    plt.tight_layout()  # Maximizes use of space
     plt.grid(True)
     return ax
 
 def DrawShapes(ax, sf, **kwargs):
+    """
+    Draw shapes from the supplied shapefile onto the supplied axes
+
+    Parameters
+    ----------
+    ax : axes (subplot)
+        axes to draw on
+    sf : shapefile.Reader object
+        The shapefile containing the shapes to draw
+    kwargs : optional
+        Keyword arguments to send to the patch object. This will generally
+        be edge and face colors, line widths, alpha, etc.
+    """
     if sf.shapeType == shapefile.POLYGON:
         for shape in sf.shapes():
             verts = np.deg2rad(shape.points)
@@ -49,6 +72,23 @@ def DrawShapes(ax, sf, **kwargs):
             ax.add_patch(patch)
 
 def DrawEllipse(ax, ll, width_deg, resolution=50):
+    """
+    Draw an ellipse on the supplied axes. Technically, a circle is drawn (an
+    ellipse with equal height and width), but this usually becomes an ellipse
+    on the projection axes.
+
+    Parameters
+    ----------
+    ax : axes (subplot)
+        axes to draw on
+    ll : tuple of floats
+        longitude and latitude coordinates (in degrees) to draw the ellipse
+    width_deg : float
+        Width of ellipse in degrees
+    resolution : int, optional, default: 50
+        number of points to use in drawing the ellipse
+    """
+    ll = np.deg2rad(ll)
     long, lat = ll
     # Use a path instead of the regular Ellipse patch to improve resolution
     height = np.deg2rad(width_deg)/2.  # use as radius, not diameter
@@ -70,44 +110,80 @@ def DrawTissot(ax, width=10., resolution=50):
 
     Parameters
     ----------
-    ax : axes (subplot) to draw on
-    width : (float default 5.) width of circles in degrees of latitude
-    resolution : (int default 50) Number of points in circle
+    ax : axes (subplot)
+        axes to draw on
+    width : float, optional, default: 5.
+        width of circles in degrees of latitude
+    resolution : int, optional, default: 50
+        Number of points in circle
     """
     degrees = 30
     for lat in range(-degrees, degrees+1, degrees):
         for long in range(-180, 181, degrees):
-            DrawEllipse(ax, np.deg2rad([long, lat]), width, resolution)
+            DrawEllipse(ax, [long, lat], width, resolution)
     for lat in [-60, 60]:
         for long in range(-180, 181, 2*degrees):
-            DrawEllipse(ax, np.deg2rad([long, lat]), width, resolution)
+            DrawEllipse(ax, [long, lat], width, resolution)
     for lat in [-90, 90]:
-        DrawEllipse(ax, np.deg2rad([0, lat]), width, resolution)
+        DrawEllipse(ax, [0, lat], width, resolution)
     ax.set_title('Equal Earth Projection with\n'
                  'Tissot Indicatrices of Deformation')
 
+def DrawCoastlines(ax, paths=None, edgedict=None, facedict=None,
+                   linewidth=.25):
+    """
+    Draw land masses, coastlines, and major lakes. Colors and linewidth
+    can be supplied.
 
-yellow = '#FEFEE6'
-blue = '#CEEAFD'
-matplotlib.rcParams['figure.facecolor'] = 'w'
-matplotlib.rcParams['axes.facecolor'] = blue
-matplotlib.rcParams['axes.edgecolor'] = 'k'
-matplotlib.rcParams['grid.color'] = 'k'
-matplotlib.rcParams['grid.alpha'] = .15
+    Parameters
+    ----------
+    ax : axes
+        axes to draw on
+    paths : list of str, optional, default: None
+        List of paths to map data, if they aren't in the default location. The
+        paths may be fully-specified or relative, and must be in format:
+            ['land path', 'coastline path', 'lake path']
+    edgedict : dict, optional, default: None
+        Optional dictionary for line colors.
+        The dict keys must be any of ['land', 'coast', 'lakes']
+    facedict : dict, optional, default: None
+        Optional dictionary for interior colors.
+        The dict keys must be any of ['land', 'coast', 'lakes']
+    linewidth : float, optional, default: .25
+        Line width of coastlines
+    """
+    # Set up default colors
+    yellow = '#FEFEE6' # wikipedia map colors (roughly)
+    blue = '#CEEAFD'
+    keys =               ['land', 'coast', 'lakes']
+    ecd = dict(zip(keys, ['none', 'k',     'k']))  # edgecolors
+    fcd = dict(zip(keys, [yellow, 'none',  blue])) # facecolors
+    # Update with any supplied colors
+    if edgedict: ecd.update(edgedict)
+    if facedict: fcd.update(facedict)
+    if not paths:
+        paths = ['ne_110m_land/ne_110m_land',
+                 'ne_110m_coastline/ne_110m_coastline',
+                 'ne_110m_lakes/ne_110m_lakes']
+    z = 0.
+    for path, key in zip(paths, keys):
+        sf = shapefile.Reader(path)
+        DrawShapes(ax, sf, lw=linewidth, zorder=z,
+                   edgecolor=ecd[key], facecolor=fcd[key])
+        z += .1
 
-paths = ['ne_110m_land/ne_110m_land',
-         'ne_110m_coastline/ne_110m_coastline',
-         'ne_110m_lakes/ne_110m_lakes']
-#      land    coast   lakes
-ecs = ['none', 'k',    'k']  # edgecolors
-fcs = [yellow, 'none', blue] # facecolors
-z = 0.
+if __name__ == '__main__':
+    yellow = '#FEFEE6'
+    blue = '#CEEAFD'
 
-ax = GetAxes('Equal Earth Tissot')
-for path, ec, fc in zip(paths, ecs, fcs):
-    sf = shapefile.Reader(path)
-    DrawShapes(ax, sf, lw=.25, edgecolor=ec, facecolor=fc, zorder=z)
-    z += .1
-DrawTissot(ax)
+    matplotlib.rcParams['figure.facecolor'] = 'w'
+    matplotlib.rcParams['axes.facecolor'] = blue
+    matplotlib.rcParams['axes.edgecolor'] = 'k'
+    matplotlib.rcParams['grid.color'] = 'k'
+    matplotlib.rcParams['grid.alpha'] = .15
 
-plt.show()
+    ax = GetAxes('Equal Earth Tissot', figprops={'figsize': (10., 6.)})
+    DrawCoastlines(ax)
+    DrawTissot(ax)
+
+    plt.show()
