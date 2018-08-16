@@ -39,8 +39,8 @@ Matplotlib so that it can be used when creating a subplot::
 
     >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
-    >>>longs = [-110, 100, 100]
-    >>>lats = [40, 40, -40]
+    >>>longs = [-110, 100, 100, -110]
+    >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
     >>>ax = fig.add_subplot(111, projection="equal_earth")
     >>>ax.plot(np.deg2rad(longs), np.deg2rad(lats))
