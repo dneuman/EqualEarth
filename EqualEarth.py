@@ -32,9 +32,12 @@ Matplotlib so that it can be used when creating a subplot::
 
     >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
+    >>>longs = [-110, 100, 100, -110]
+    >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
-    >>>fig.clear()
     >>>ax = fig.add_subplot(111, projection="equal_earth")
+    >>>ax.plot(np.deg2rad(longs), np.deg2rad(lats))
+    >>>plt.grid(True)
     >>>plt.show()
 
 Note that all data must be in radians, so be sure to use ``np.deg2rad()``
@@ -56,6 +59,7 @@ import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle
 from matplotlib.path import Path
+import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator, Formatter, FixedLocator
 from matplotlib.transforms import Affine2D, BboxTransformTo, Transform
 from matplotlib.projections import register_projection
@@ -423,7 +427,7 @@ class EqualEarthAxes(GeoAxes):
     # i.e. ``subplot(111, projection='equal_earth')``.
     name = 'equal_earth'
 
-    def _gen_axes_path(self):
+    def _gen_axes_verts(self):
         """
         Create the path that defines the outline of the projection
         """
@@ -431,14 +435,9 @@ class EqualEarthAxes(GeoAxes):
                  (-np.pi,  np.pi/2), # left, top
                  ( np.pi,  np.pi/2), # right, top
                  ( np.pi, -np.pi/2), # right, bottom
-                 (-np.pi, -np.pi/2)] # ignored                ]
-        codes = [Path.MOVETO,
-                 Path.LINETO,
-                 Path.LINETO,
-                 Path.LINETO,
-                 Path.CLOSEPOLY,
-                 ]
-        return Path(verts, codes)
+                 (-np.pi, -np.pi/2)] # close path
+
+        return verts
 
     def _gen_axes_patch(self):
         """
@@ -448,16 +447,17 @@ class EqualEarthAxes(GeoAxes):
         In this case, it is a closed square path that is warped by the
         projection.
         """
-        path = self._gen_axes_path()
-        patch = matplotlib.patches.PathPatch(path,
-                                             facecolor=rcParams['axes.facecolor'])
+        verts = self._gen_axes_verts()
+        patch = patches.Polygon(verts,
+                                facecolor=rcParams['axes.facecolor'])
         return patch
 
     def _gen_axes_spines(self):
         spine_type = 'circle'
-        path = self._gen_axes_path()
+        verts = self._gen_axes_verts()
+        path = patches.mlines.Path(verts)
 
-        spine = mspines.Spine(self, spine_type, path, linewidth=2)
+        spine = mspines.Spine(self, spine_type, path, linewidth=5)
         #spine.set_transform(self.transAxes)
         return {'geo': spine}
 
@@ -578,10 +578,12 @@ register_projection(EqualEarthAxes)
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     # Now make a simple example using the custom projection.
+    longs = [-110, 100, 100, -110]
+    lats = [40, 40, -40, 40]
     fig = plt.figure('Equal Earth Projection')
     fig.clear()
     ax = fig.add_subplot(111, projection="equal_earth")
-    p = ax.plot([-1, 1, 1], [-1, -1, 1], "o-")
+    ax.plot(np.deg2rad(longs), np.deg2rad(lats))
     plt.grid(True)
     plt.tight_layout()
 
