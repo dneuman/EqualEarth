@@ -24,7 +24,8 @@ import matplotlib
 import numpy as np
 import EqualEarth  # Automatically registers in matplotlib on import
 
-def GetAxes(figname='Equal Earth Projection', figprops=None, **kwargs):
+def GetAxes(figname='Equal Earth Projection', show_labels=True,
+            figprops=None, **kwargs):
     """
     Return matplotlib axes with Equal Earth projection
 
@@ -33,6 +34,8 @@ def GetAxes(figname='Equal Earth Projection', figprops=None, **kwargs):
     figname : int or str, optional, default: 'Equal Earth Projection'
         Name of figure. If a number is given, will default to
         'Figure {figname}'
+    show_labels : bool, optional, default: True
+        Option to turn off grid labels.
     figprops : dict, optional, default: None
         Dictionary of properties to send to the figure during creation.
     kwargs : optional
@@ -41,6 +44,9 @@ def GetAxes(figname='Equal Earth Projection', figprops=None, **kwargs):
     fig = plt.figure(figname, **figprops)
     fig.clear()
     ax = fig.add_subplot(111, projection='equal_earth', **kwargs)
+    if not show_labels:
+            ax.yaxis.set_ticklabels([])
+            ax.xaxis.set_ticklabels([])
     plt.tight_layout()  # Maximizes use of space
     plt.grid(True)
     return ax
@@ -182,11 +188,9 @@ if __name__ == '__main__':
     matplotlib.rcParams['grid.color'] = 'k'
     matplotlib.rcParams['grid.alpha'] = .15
 
-    ax = GetAxes('Equal Earth Tissot', figprops={'figsize': (10., 6.)})
+    ax = GetAxes('Equal Earth Tissot', show_labels=False,
+                 figprops={'figsize': (10., 6.)})
     DrawCoastlines(ax)
-    ax.yaxis.set_ticklabels([])
-    ax.xaxis.set_ticklabels([])
-    plt.tight_layout()  # redo autolayout
     DrawTissot(ax)
 
     plt.show()
