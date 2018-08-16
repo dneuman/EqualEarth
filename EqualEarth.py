@@ -221,9 +221,13 @@ class GeoAxes(Axes):
             Affine2D().translate(8.0, 0.0)
 
     def _get_affine_transform(self):
+        if self._rad:
+            lim = np.pi / 2.
+        else:
+            lim = 90.
         transform = self._get_core_transform(1)
-        xscale, _ = transform.transform_point((np.pi, 0))
-        _, yscale = transform.transform_point((0, np.pi / 2.0))
+        xscale, _ = transform.transform_point((lim * 2., 0))
+        _, yscale = transform.transform_point((0, lim))
         return Affine2D() \
             .scale(0.5 / xscale, 0.5 / yscale) \
             .translate(0.5, 0.5)
@@ -425,6 +429,25 @@ class EqualEarthAxes(GeoAxes):
     # i.e. ``subplot(111, projection='equal_earth')``.
     name = 'equal_earth'
 
+    def cla(self):
+        Axes.cla(self)
+
+        self.set_longitude_grid(30)
+        self.set_latitude_grid(15)
+        self.set_longitude_grid_ends(75)
+        self.xaxis.set_minor_locator(NullLocator())
+        self.yaxis.set_minor_locator(NullLocator())
+        self.xaxis.set_ticks_position('none')
+        self.yaxis.set_ticks_position('none')
+        self.yaxis.set_tick_params(label1On=True)
+        # Why do we need to turn on yaxis tick labels, but
+        # xaxis tick labels are already on?
+
+        self.grid(rcParams['axes.grid'])
+
+        Axes.set_xlim(self, -np.pi, np.pi)
+        Axes.set_ylim(self, -np.pi / 2.0, np.pi / 2.0)
+
     def _gen_axes_verts(self):
         """
         Create the path that defines the outline of the projection
@@ -475,8 +498,8 @@ class EqualEarthAxes(GeoAxes):
             steps to interpolate between each input line segment to approximate
             its path in curved Equal Earth space.
             """
-            Transform.__init__(self)
             self._resolution = resolution
+            Transform.__init__(self)
 
         def transform_non_affine(self, ll):
             """
@@ -554,8 +577,14 @@ class EqualEarthAxes(GeoAxes):
             return EqualEarthAxes.EqualEarthTransform(self._resolution)
         inverted.__doc__ = Transform.inverted.__doc__
 
-    def __init__(self, *args, **kwargs):
-        self._longitude_cap = np.pi / 2.0
+    def __init__(self, *args, rad=True, **kwargs):
+
+        self._rad = rad
+        if rad:
+            self._limit = np.pi * 0.5
+        else:
+            self._limit = 90.
+        self._longitude_cap = self._limit
         GeoAxes.__init__(self, *args, **kwargs)
         self.set_aspect(0.5, adjustable='box', anchor='C')
         self.cla()
