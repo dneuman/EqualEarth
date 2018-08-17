@@ -457,6 +457,70 @@ class EqualEarthAxes(GeoAxes):
         Axes.set_xlim(self, -lim * 2., lim * 2.)
         Axes.set_ylim(self, -lim, lim)
 
+    def _set_lim_and_transforms(self):
+        # There are three important coordinate spaces going on here:
+        #
+        #    1. Data space: The space of the data itself
+        #
+        #    2. Axes space: The unit rectangle (0, 0) to (1, 1)
+        #       covering the entire plot area.
+        #
+        #    3. Display space: The coordinates of the resulting image,
+        #       often in pixels or dpi/inch.
+        self.transProjection = self._get_core_transform(self.RESOLUTION)
+        self.transAffine = self._get_affine_transform()
+        self.transAxes = BboxTransformTo(self.bbox)
+        # Combine into one transform
+        self.transData = \
+            self.transProjection + \
+            self.transAffine + \
+            self.transAxes
+
+        # Longitude gridlines and ticklabels.  The input to these
+        # transforms are in display space in x and axes space in y.
+        # Therefore, the input values will be in range (-xmin, 0),
+        # (xmax, 1).
+        lim = self._limit # (pi/2 or 90°)
+        self._xaxis_pretransform = \
+            Affine2D() \
+            .scale(1.0, lim * 2.0) \
+            .translate(0.0, -lim)
+        self._xaxis_transform = \
+            self._xaxis_pretransform + \
+            self.transData
+        self._xaxis_text1_transform = \
+            Affine2D().scale(1.0, 0.0) + \
+            self.transData + \
+            Affine2D().translate(0.0, 4.0)
+        self._xaxis_text2_transform = \
+            Affine2D().scale(1.0, 0.0) + \
+            self.transData + \
+            Affine2D().translate(0.0, -4.0)
+
+        # Now set up the transforms for the latitude ticks.  The input to
+        # these transforms are in axes space in x and display space in
+        # y.  Therefore, the input values will be in range (0, -ymin),
+        # (1, ymax).  The goal of these transforms is to go from that
+        # space to display space.  The tick labels will be offset 8
+        # pixels from the edge of the axes ellipse.
+        yaxis_stretch = Affine2D().scale(lim * 4, 1).translate(-lim * 2, 0)
+        yaxis_space = Affine2D().scale(1.0, 1.1)
+        self._yaxis_transform = \
+            yaxis_stretch + \
+            self.transData
+        yaxis_text_base = \
+            yaxis_stretch + \
+            self.transProjection + \
+            (yaxis_space +
+             self.transAffine +
+             self.transAxes)
+        self._yaxis_text1_transform = \
+            yaxis_text_base + \
+            Affine2D().translate(-8.0, 0.0)
+        self._yaxis_text2_transform = \
+            yaxis_text_base + \
+            Affine2D().translate(8.0, 0.0)
+
     def _get_core_transform(self, resolution):
         return self.EqualEarthTransform(resolution, self._rad)
 
@@ -469,7 +533,7 @@ class EqualEarthAxes(GeoAxes):
             .scale(0.5 / xscale, 0.5 / yscale) \
             .translate(0.5, 0.5)
 
-    def _gen_axes_verts(self):
+    def _gen_axes_path(self):
         """
         Create the path that defines the outline of the projection
         """
@@ -480,7 +544,7 @@ class EqualEarthAxes(GeoAxes):
                  ( lim * 2, -lim), # right, bottom
                  (-lim * 2, -lim)] # close path
 
-        return verts
+        return patches.Path(verts, closed=True)
 
     def _gen_axes_patch(self):
         """
@@ -490,8 +554,7 @@ class EqualEarthAxes(GeoAxes):
         In this case, it is a closed square path that is warped by the
         projection. Note that it must be in Axes space (0, 1).
         """
-        verts = self._gen_axes_verts()  # Data space
-        path = patches.Path(verts, closed=True)
+        path = self._gen_axes_path()  # Data space
         # convert to projection space with iterations on path
         ipath = self.transProjection.transform_path_non_affine(path)
         # convert to axes space
@@ -501,10 +564,29 @@ class EqualEarthAxes(GeoAxes):
 
     def _gen_axes_spines(self):
         spine_type = 'circle'
-        verts = self._gen_axes_verts()
-        path = patches.Path(verts, closed=True)
+        path = self._gen_axes_path()
         spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
+
+    def format_coord(self, lon, lat):
+        """
+        Override this method to change how the values are displayed in
+        the status bar.
+
+        In this case, we want them to be displayed in degrees N/S/E/W.
+        """
+        if self._rad:
+            lon, lat = np.rad2deg([lon, lat])
+        if lat >= 0.0:
+            ns = 'N'
+        else:
+            ns = 'S'
+        if lon >= 0.0:
+            ew = 'E'
+        else:
+            ew = 'W'
+        return ('%f\N{DEGREE SIGN}%s, %f\N{DEGREE SIGN}%s'
+                % (abs(lat), ns, abs(lon), ew))
 
     def set_longitude_grid(self, degrees):
         """
@@ -518,7 +600,7 @@ class EqualEarthAxes(GeoAxes):
         grid = np.arange(-180 + degrees, 180, degrees)
         if self._rad: grid = np.deg2rad(grid)
         self.xaxis.set_major_locator(FixedLocator(grid))
-        self.xaxis.set_major_formatter(self.ThetaFormatter(degrees))
+        self.xaxis.set_major_formatter(self.ThetaFormatter(self._rad, degrees))
 
     def set_latitude_grid(self, degrees):
         """
@@ -532,7 +614,7 @@ class EqualEarthAxes(GeoAxes):
         grid = np.arange(-90 + degrees, 90, degrees)
         if self._rad: grid = np.deg2rad(grid)
         self.yaxis.set_major_locator(FixedLocator(grid))
-        self.yaxis.set_major_formatter(self.ThetaFormatter(degrees))
+        self.yaxis.set_major_formatter(self.ThetaFormatter(self._rad, degrees))
 
     def set_longitude_grid_ends(self, degrees):
         """
@@ -550,6 +632,23 @@ class EqualEarthAxes(GeoAxes):
             .clear() \
             .scale(1.0, self._longitude_cap * 2.0) \
             .translate(0.0, -self._longitude_cap)
+
+    class ThetaFormatter(Formatter):
+        """
+        Used to format the theta tick labels.  Converts the native
+        unit of radians into degrees and adds a degree symbol.
+        """
+        def __init__(self, rad, round_to=1.0):
+            self._round_to = round_to
+            self._rad = rad
+
+        def __call__(self, x, pos=None):
+            if self._rad: x = np.rad2deg(x).copy()
+            degrees = np.round(x / self._round_to) * self._round_to
+            if rcParams['text.usetex'] and not rcParams['text.latex.unicode']:
+                return r"$%0.0f^\circ$" % degrees
+            else:
+                return "%0.0f\N{DEGREE SIGN}" % degrees
 
     class EqualEarthTransform(Transform):
         """
@@ -593,7 +692,7 @@ class EqualEarthAxes(GeoAxes):
             result = np.concatenate((x, y), 1)
             if not self._rad: result = np.rad2deg(result)
 
-            return np.concatenate((x, y), 1)
+            return result
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
 
         def transform_path_non_affine(self, path):
@@ -624,6 +723,8 @@ class EqualEarthAxes(GeoAxes):
             the exact inverse is not solvable. Method based on
             https://beta.observablehq.com/@mbostock/equal-earth-projection
             """
+            # if not using radians, convert from degrees first
+            if not self._rad: xy = np.deg2rad(xy)
             x, y = xy.T
             # Pre-compute some values
             iterations = 12
@@ -644,11 +745,14 @@ class EqualEarthAxes(GeoAxes):
                 if np.abs(dp) < limit: break
             long = M * x * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))/np.cos(p)
             lat = np.arcsin(p)/M
-            return np.column_stack([long, lat])
+            result = np.column_stack([long, lat])
+            if not self._rad: result = np.rad2deg(result)
+            return result
         transform_non_affine.__doc__ = Transform.transform_non_affine.__doc__
 
         def inverted(self):
-            return EqualEarthAxes.EqualEarthTransform(self._resolution)
+            return EqualEarthAxes.EqualEarthTransform(self._resolution,
+                                                      self._rad)
         inverted.__doc__ = Transform.inverted.__doc__
 
 
@@ -666,6 +770,13 @@ if __name__ == '__main__':
     fig.clear()
     ax = fig.add_subplot(111, projection="equal_earth")
     ax.plot(np.deg2rad(longs), np.deg2rad(lats))
+    plt.grid(True)
+    plt.tight_layout()
+
+    figd = plt.figure('Equal Earth (Degrees)')
+    figd.clear()
+    axd = figd.add_subplot(111, projection='equal_earth', rad=False)
+    axd.plot(longs, lats)
     plt.grid(True)
     plt.tight_layout()
 
