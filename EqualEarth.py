@@ -127,8 +127,9 @@ class GeoAxes(Axes):
 
         self.grid(rcParams['axes.grid'])
 
-        Axes.set_xlim(self, -np.pi, np.pi)
-        Axes.set_ylim(self, -np.pi / 2.0, np.pi / 2.0)
+        lim = self._limit
+        Axes.set_xlim(self, -lim * 2., lim * 2.)
+        Axes.set_ylim(self, -lim, lim)
 
     def _set_lim_and_transforms(self):
         # A (possibly non-linear) projection on the (already scaled) data
@@ -439,26 +440,6 @@ class EqualEarthAxes(GeoAxes):
         self._longitude_cap = self._limit
         self.set_aspect(0.5, adjustable='box', anchor='C')
         self.cla()
-
-    def cla(self):
-        Axes.cla(self)
-
-        self.set_longitude_grid(30)
-        self.set_latitude_grid(15)
-        self.set_longitude_grid_ends(75)
-        self.xaxis.set_minor_locator(NullLocator())
-        self.yaxis.set_minor_locator(NullLocator())
-        self.xaxis.set_ticks_position('none')
-        self.yaxis.set_ticks_position('none')
-        self.yaxis.set_tick_params(label1On=True)
-        # Why do we need to turn on yaxis tick labels, but
-        # xaxis tick labels are already on?
-
-        self.grid(rcParams['axes.grid'])
-
-        lim = self._limit
-        Axes.set_xlim(self, -lim * 2., lim * 2.)
-        Axes.set_ylim(self, -lim, lim)
 
     def _set_lim_and_transforms(self):
         # There are three important coordinate spaces going on here:
