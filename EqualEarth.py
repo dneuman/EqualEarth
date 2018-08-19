@@ -95,6 +95,14 @@ class GeoAxes(Axes):
 
     RESOLUTION = 75
 
+    def __init__(self, *args, rad=True, **kwargs):
+        self._rad = rad
+        if self._rad:
+            self._limit = np.pi * 0.5
+        else:
+            self._limit = 90.
+        super().__init__(*args, **kwargs)
+
     def _init_axis(self):
         self.xaxis = maxis.XAxis(self)
         self.yaxis = maxis.YAxis(self)
@@ -427,13 +435,8 @@ class EqualEarthAxes(GeoAxes):
 
     def __init__(self, *args, rad=True, **kwargs):
 
-        self._rad = rad
-        if rad:
-            self._limit = np.pi * 0.5
-        else:
-            self._limit = 90.
+        GeoAxes.__init__(self, *args, rad=rad, **kwargs)
         self._longitude_cap = self._limit
-        GeoAxes.__init__(self, *args, **kwargs)
         self.set_aspect(0.5, adjustable='box', anchor='C')
         self.cla()
 
