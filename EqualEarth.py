@@ -332,7 +332,8 @@ class GeoAxes(Axes):
 
         In this case, we want them to be displayed in degrees N/S/E/W.
         """
-        lon, lat = np.rad2deg([lon, lat])
+        if self._rad:
+            lon, lat = np.rad2deg([lon, lat])
         if lat >= 0.0:
             ns = 'N'
         else:
@@ -480,26 +481,6 @@ class EqualEarthAxes(GeoAxes):
         path = self._gen_axes_path()
         spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
-
-    def format_coord(self, lon, lat):
-        """
-        Override this method to change how the values are displayed in
-        the status bar.
-
-        In this case, we want them to be displayed in degrees N/S/E/W.
-        """
-        if self._rad:
-            lon, lat = np.rad2deg([lon, lat])
-        if lat >= 0.0:
-            ns = 'N'
-        else:
-            ns = 'S'
-        if lon >= 0.0:
-            ew = 'E'
-        else:
-            ew = 'W'
-        return ('%f\N{DEGREE SIGN}%s, %f\N{DEGREE SIGN}%s'
-                % (abs(lat), ns, abs(lon), ew))
 
     def set_longitude_grid(self, degrees):
         """
