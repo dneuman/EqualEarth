@@ -83,11 +83,13 @@ class GeoAxes(Axes):
         Used to format the theta tick labels.  Converts the native
         unit of radians into degrees and adds a degree symbol.
         """
-        def __init__(self, round_to=1.0):
+        def __init__(self, rad, round_to=1.0):
             self._round_to = round_to
+            self._rad = rad
 
         def __call__(self, x, pos=None):
-            degrees = np.round(np.rad2deg(x) / self._round_to) * self._round_to
+            if self._rad: x = np.rad2deg(x)
+            degrees = np.round(x / self._round_to) * self._round_to
             if rcParams['text.usetex'] and not rcParams['text.latex.unicode']:
                 return r"$%0.0f^\circ$" % degrees
             else:
@@ -355,8 +357,9 @@ class GeoAxes(Axes):
         """
         # Skip -180 and 180, which are the fixed limits.
         grid = np.arange(-180 + degrees, 180, degrees)
-        self.xaxis.set_major_locator(FixedLocator(np.deg2rad(grid)))
-        self.xaxis.set_major_formatter(self.ThetaFormatter(degrees))
+        if self._rad: grid = np.deg2rad(grid)
+        self.xaxis.set_major_locator(FixedLocator(grid))
+        self.xaxis.set_major_formatter(self.ThetaFormatter(self._rad, degrees))
 
     def set_latitude_grid(self, degrees):
         """
@@ -482,20 +485,6 @@ class EqualEarthAxes(GeoAxes):
         spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
 
-    def set_longitude_grid(self, degrees):
-        """
-        Set the number of degrees between each longitude grid.
-
-        This is an example method that is specific to this projection
-        class -- it provides a more convenient interface to set the
-        ticking than set_xticks would.
-        """
-        # Skip -180 and 180, which are the fixed limits.
-        grid = np.arange(-180 + degrees, 180, degrees)
-        if self._rad: grid = np.deg2rad(grid)
-        self.xaxis.set_major_locator(FixedLocator(grid))
-        self.xaxis.set_major_formatter(self.ThetaFormatter(self._rad, degrees))
-
     def set_latitude_grid(self, degrees):
         """
         Set the number of degrees between each longitude grid.
@@ -526,23 +515,6 @@ class EqualEarthAxes(GeoAxes):
             .clear() \
             .scale(1.0, self._longitude_cap * 2.0) \
             .translate(0.0, -self._longitude_cap)
-
-    class ThetaFormatter(Formatter):
-        """
-        Used to format the theta tick labels.  Converts the native
-        unit of radians into degrees and adds a degree symbol.
-        """
-        def __init__(self, rad, round_to=1.0):
-            self._round_to = round_to
-            self._rad = rad
-
-        def __call__(self, x, pos=None):
-            if self._rad: x = np.rad2deg(x).copy()
-            degrees = np.round(x / self._round_to) * self._round_to
-            if rcParams['text.usetex'] and not rcParams['text.latex.unicode']:
-                return r"$%0.0f^\circ$" % degrees
-            else:
-                return "%0.0f\N{DEGREE SIGN}" % degrees
 
     class EqualEarthTransform(Transform):
         """
