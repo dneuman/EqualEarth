@@ -387,7 +387,10 @@ class GeoAxes(Axes):
         class -- it provides an interface to something that has no
         analogy in the base Axes class.
         """
-        self._longitude_cap = np.deg2rad(degrees)
+        if self._rad:
+            self._longitude_cap = np.deg2rad(degrees)
+        else:
+            self._longitude_cap = degrees
         self._xaxis_pretransform \
             .clear() \
             .scale(1.0, self._longitude_cap * 2.0) \
@@ -485,23 +488,6 @@ class EqualEarthAxes(GeoAxes):
         path = self._gen_axes_path()
         spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
-
-    def set_longitude_grid_ends(self, degrees):
-        """
-        Set the latitude(s) at which to stop drawing the longitude grids.
-
-        Often, in geographic projections, you wouldn't want to draw
-        longitude gridlines near the poles.  This allows the user to
-        specify the degree at which to stop drawing longitude grids.
-        """
-        if self._rad:
-            self._longitude_cap = np.deg2rad(degrees)
-        else:
-            self._longitude_cap = degrees
-        self._xaxis_pretransform \
-            .clear() \
-            .scale(1.0, self._longitude_cap * 2.0) \
-            .translate(0.0, -self._longitude_cap)
 
     class EqualEarthTransform(Transform):
         """
