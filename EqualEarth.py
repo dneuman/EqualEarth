@@ -189,10 +189,11 @@ class GeoAxes(Axes):
         # (xmax, 1).  The goal of these transforms is to go from that
         # space to display space.  The tick labels will be offset 4
         # pixels from the equator.
+        lim = self._limit # (pi/2 or 90°)
         self._xaxis_pretransform = \
             Affine2D() \
-            .scale(1.0, self._longitude_cap * 2.0) \
-            .translate(0.0, -self._longitude_cap)
+            .scale(1.0, lim * 2.0) \
+            .translate(0.0, -lim)
         self._xaxis_transform = \
             self._xaxis_pretransform + \
             self.transData
@@ -211,7 +212,7 @@ class GeoAxes(Axes):
         # (1, ymax).  The goal of these transforms is to go from that
         # space to display space.  The tick labels will be offset 4
         # pixels from the edge of the axes ellipse.
-        yaxis_stretch = Affine2D().scale(np.pi*2, 1).translate(-np.pi, 0)
+        yaxis_stretch = Affine2D().scale(lim * 4, 1).translate(-lim * 2, 0)
         yaxis_space = Affine2D().scale(1.0, 1.1)
         self._yaxis_transform = \
             yaxis_stretch + \
@@ -441,69 +442,6 @@ class EqualEarthAxes(GeoAxes):
         self.set_aspect(0.5, adjustable='box', anchor='C')
         self.cla()
 
-    def _set_lim_and_transforms(self):
-        # There are three important coordinate spaces going on here:
-        #
-        #    1. Data space: The space of the data itself
-        #
-        #    2. Axes space: The unit rectangle (0, 0) to (1, 1)
-        #       covering the entire plot area.
-        #
-        #    3. Display space: The coordinates of the resulting image,
-        #       often in pixels or dpi/inch.
-        self.transProjection = self._get_core_transform(self.RESOLUTION)
-        self.transAffine = self._get_affine_transform()
-        self.transAxes = BboxTransformTo(self.bbox)
-        # Combine into one transform
-        self.transData = \
-            self.transProjection + \
-            self.transAffine + \
-            self.transAxes
-
-        # Longitude gridlines and ticklabels.  The input to these
-        # transforms are in display space in x and axes space in y.
-        # Therefore, the input values will be in range (-xmin, 0),
-        # (xmax, 1).
-        lim = self._limit # (pi/2 or 90°)
-        self._xaxis_pretransform = \
-            Affine2D() \
-            .scale(1.0, lim * 2.0) \
-            .translate(0.0, -lim)
-        self._xaxis_transform = \
-            self._xaxis_pretransform + \
-            self.transData
-        self._xaxis_text1_transform = \
-            Affine2D().scale(1.0, 0.0) + \
-            self.transData + \
-            Affine2D().translate(0.0, 4.0)
-        self._xaxis_text2_transform = \
-            Affine2D().scale(1.0, 0.0) + \
-            self.transData + \
-            Affine2D().translate(0.0, -4.0)
-
-        # Now set up the transforms for the latitude ticks.  The input to
-        # these transforms are in axes space in x and display space in
-        # y.  Therefore, the input values will be in range (0, -ymin),
-        # (1, ymax).  The goal of these transforms is to go from that
-        # space to display space.  The tick labels will be offset 8
-        # pixels from the edge of the axes ellipse.
-        yaxis_stretch = Affine2D().scale(lim * 4, 1).translate(-lim * 2, 0)
-        yaxis_space = Affine2D().scale(1.0, 1.1)
-        self._yaxis_transform = \
-            yaxis_stretch + \
-            self.transData
-        yaxis_text_base = \
-            yaxis_stretch + \
-            self.transProjection + \
-            (yaxis_space +
-             self.transAffine +
-             self.transAxes)
-        self._yaxis_text1_transform = \
-            yaxis_text_base + \
-            Affine2D().translate(-8.0, 0.0)
-        self._yaxis_text2_transform = \
-            yaxis_text_base + \
-            Affine2D().translate(8.0, 0.0)
 
     def _get_core_transform(self, resolution):
         return self.EqualEarthTransform(resolution, self._rad)
