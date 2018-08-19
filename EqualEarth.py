@@ -371,8 +371,9 @@ class GeoAxes(Axes):
         """
         # Skip -90 and 90, which are the fixed limits.
         grid = np.arange(-90 + degrees, 90, degrees)
-        self.yaxis.set_major_locator(FixedLocator(np.deg2rad(grid)))
-        self.yaxis.set_major_formatter(self.ThetaFormatter(degrees))
+        if self._rad: grid = np.deg2rad(grid)
+        self.yaxis.set_major_locator(FixedLocator(grid))
+        self.yaxis.set_major_formatter(self.ThetaFormatter(self._rad, degrees))
 
     def set_longitude_grid_ends(self, degrees):
         """
@@ -484,20 +485,6 @@ class EqualEarthAxes(GeoAxes):
         path = self._gen_axes_path()
         spine = mspines.Spine(self, spine_type, path)
         return {'geo': spine}
-
-    def set_latitude_grid(self, degrees):
-        """
-        Set the number of degrees between each longitude grid.
-
-        This is an example method that is specific to this projection
-        class -- it provides a more convenient interface than
-        set_yticks would.
-        """
-        # Skip -90 and 90, which are the fixed limits.
-        grid = np.arange(-90 + degrees, 90, degrees)
-        if self._rad: grid = np.deg2rad(grid)
-        self.yaxis.set_major_locator(FixedLocator(grid))
-        self.yaxis.set_major_formatter(self.ThetaFormatter(self._rad, degrees))
 
     def set_longitude_grid_ends(self, degrees):
         """
