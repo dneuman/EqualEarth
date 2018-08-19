@@ -31,7 +31,7 @@ where:
 Usage
 -----
 Importing the module causes the Equal Earth projection to be registered with
-Matplotlib so that it can be used when creating a subplot::
+Matplotlib so that it can be used when creating a subplot:
 
     >>>import matplotlib.pyplot as plt
     >>>import EqualEarth
@@ -39,14 +39,14 @@ Matplotlib so that it can be used when creating a subplot::
     >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
     >>>ax = fig.add_subplot(111, projection="equal_earth")
-    >>>ax.plot(np.deg2rad(longs), np.deg2rad(lats))
+    >>>ax.plot(longs, lats)
     >>>plt.grid(True)
     >>>plt.show()
 
 ![Result](charts/result.png)
 
-Note that all data must be in radians, so be sure to use ``np.deg2rad()``
-before plotting with data in degrees.
+Note that the default behaviour is to take all data in degrees. If radians
+are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``.
 
 Sources
 -------
@@ -55,11 +55,6 @@ Based on code from:
 
 as well as code from @mbostock:
 * https://beta.observablehq.com/@mbostock/equal-earth-projection
-
-
-Issues
-------
-* Does not accept data in degrees, so data must be converted to radians first.
 
 @Author: Dan Neuman (@dan613)
 

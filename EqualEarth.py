@@ -37,16 +37,12 @@ Matplotlib so that it can be used when creating a subplot::
     >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
     >>>ax = fig.add_subplot(111, projection="equal_earth")
-    >>>ax.plot(np.deg2rad(longs), np.deg2rad(lats))
+    >>>ax.plot(longs, lats)
     >>>plt.grid(True)
     >>>plt.show()
 
-Note that all data must be in radians, so be sure to use ``np.deg2rad()``
-before plotting with data in degrees.
-
-Issues
-------
-* Does not accept data in degrees, so data must be converted to radians first.
+Note that the default behaviour is to take all data in degrees. If radians
+are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``.
 
 @Author: Dan Neuman (@dan613)
 """
@@ -444,7 +440,7 @@ class EqualEarthAxes(GeoAxes):
     # i.e. ``subplot(111, projection='equal_earth')``.
     name = 'equal_earth'
 
-    def __init__(self, *args, rad=True, **kwargs):
+    def __init__(self, *args, rad=False, **kwargs):
 
         GeoAxes.__init__(self, *args, rad=rad, **kwargs)
         self._longitude_cap = self._limit
@@ -605,16 +601,16 @@ if __name__ == '__main__':
     # Now make a simple example using the custom projection.
     longs = [-200, 100, 100, -200]
     lats = [40, 40, -40, 40]
-    fig = plt.figure('Equal Earth Projection')
+    fig = plt.figure('Equal Earth (Radians)')
     fig.clear()
-    ax = fig.add_subplot(111, projection="equal_earth")
+    ax = fig.add_subplot(111, projection="equal_earth", rad=True)
     ax.plot(np.deg2rad(longs), np.deg2rad(lats))
     plt.grid(True)
     plt.tight_layout()
 
     figd = plt.figure('Equal Earth (Degrees)')
     figd.clear()
-    axd = figd.add_subplot(111, projection='equal_earth', rad=False)
+    axd = figd.add_subplot(111, projection='equal_earth')
     axd.plot(longs, lats)
     plt.grid(True)
     plt.tight_layout()
