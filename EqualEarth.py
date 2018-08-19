@@ -231,9 +231,10 @@ class GeoAxes(Axes):
             Affine2D().translate(8.0, 0.0)
 
     def _get_affine_transform(self):
+        lim = self._limit
         transform = self._get_core_transform(1)
-        xscale, _ = transform.transform_point((np.pi, 0))
-        _, yscale = transform.transform_point((0, np.pi / 2))
+        xscale, _ = transform.transform_point((lim * 2, 0))
+        _, yscale = transform.transform_point((0, lim))
         return Affine2D() \
             .scale(0.5 / xscale, 0.5 / yscale) \
             .translate(0.5, 0.5)
@@ -442,18 +443,8 @@ class EqualEarthAxes(GeoAxes):
         self.set_aspect(0.5, adjustable='box', anchor='C')
         self.cla()
 
-
     def _get_core_transform(self, resolution):
         return self.EqualEarthTransform(resolution, self._rad)
-
-    def _get_affine_transform(self):
-        lim = self._limit
-        transform = self._get_core_transform(1)
-        xscale, _ = transform.transform_point((lim * 2, 0))
-        _, yscale = transform.transform_point((0, lim))
-        return Affine2D() \
-            .scale(0.5 / xscale, 0.5 / yscale) \
-            .translate(0.5, 0.5)
 
     def _gen_axes_path(self):
         """
