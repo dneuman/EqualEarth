@@ -67,12 +67,12 @@ def DrawShapes(ax, sf, **kwargs):
     """
     if sf.shapeType == shapefile.POLYGON:
         for shape in sf.shapes():
-            verts = np.deg2rad(shape.points)
+            verts = shape.points
             patch = patches.Polygon(verts, **kwargs)
             ax.add_patch(patch)
     elif sf.shapeType == shapefile.POLYLINE:
         for shape in sf.shapes():
-            verts = np.deg2rad(shape.points)
+            verts = shape.points
             path = patches.mlines.Path(verts)
             patch = patches.PathPatch(path, **kwargs)
             ax.add_patch(patch)
@@ -94,12 +94,11 @@ def DrawEllipse(ax, ll, width_deg, resolution=50):
     resolution : int, optional, default: 50
         number of points to use in drawing the ellipse
     """
-    ll = np.deg2rad(ll)
     long, lat = ll
     # Use a path instead of the regular Ellipse patch to improve resolution
-    height = np.deg2rad(width_deg)/2.  # use as radius, not diameter
-    width = height/np.cos(lat)
-    t = np.linspace(0., 2.*np.pi, resolution)
+    height = width_deg/2.  # use as radius, not diameter
+    width = height/np.cos(np.deg2rad(lat))
+    t = np.linspace(0., 2. * np.pi, resolution)
     t = np.r_[t, [0]]  # append starting point to close path
     longs = width * np.cos(t) + long
     lats = height * np.sin(t) + lat
@@ -168,9 +167,9 @@ def DrawCoastlines(ax, paths=None, edgedict=None, facedict=None,
     if edgedict: ecd.update(edgedict)
     if facedict: fcd.update(facedict)
     if not paths:
-        paths = ['ne_110m_land/ne_110m_land',
-                 'ne_110m_coastline/ne_110m_coastline',
-                 'ne_110m_lakes/ne_110m_lakes']
+        paths = ['maps/ne_110m_land/ne_110m_land',
+                 'maps/ne_110m_coastline/ne_110m_coastline',
+                 'maps/ne_110m_lakes/ne_110m_lakes']
     z = 0.
     for path, key in zip(paths, keys):
         sf = shapefile.Reader(path)
