@@ -509,22 +509,24 @@ class EqualEarthAxes(GeoAxes):
             if self._rad is False.
             """
             if not self._rad: ll = np.deg2rad(ll)
-            long = ll[:, 0:1]
-            lat = ll[:, 1:2]
+            long, lat = ll.T
 
-            # Pre-compute some values
+            # Constants
             A1 = 1.340264
             A2 = -0.081106
             A3 = 0.000893
             A4 = 0.003796
+            A23 = A2 * 3.
+            A37 = A3 * 7.
+            A49 = A4 * 9.
             M = np.sqrt(3.)/2.
             p = np.arcsin(M * np.sin(lat))  # parametric latitude
             p2 = p**2
             p6 = p**6
             x = long * np.cos(p)/ \
-                (M * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2)))
+                (M * (A1 + A23*p2 + p6*(A37 + A49*p2)))
             y = p*(A1 + A2*p2 + p6*(A3 + A4*p2))
-            result = np.concatenate((x, y), 1)
+            result = np.column_stack([x, y])
             if not self._rad: result = np.rad2deg(result)
 
             return result
@@ -561,25 +563,35 @@ class EqualEarthAxes(GeoAxes):
             # if not using radians, convert from degrees first
             if not self._rad: xy = np.deg2rad(xy)
             x, y = xy.T
-            # Pre-compute some values
-            iterations = 12
-            limit = 1e-9
+            # Constants
+            iterations = 20
+            limit = 1e-8
             A1 = 1.340264
             A2 = -0.081106
             A3 = 0.000893
             A4 = 0.003796
+            A23 = A2 * 3.
+            A37 = A3 * 7.
+            A49 = A4 * 9.
             M = np.sqrt(3.)/2.
-            p = y  # estimate for parametric latitude
+            # Use Newtons Method, where:
+            #   fy is the function you need the root of
+            #   dy is the derivative of the function
+            #   dp is fy/dy or the change in estimate.
+            p = y.copy()    # initial estimate for parametric latitude
+            # Note y is a reference, so as p changes, so would y,
+            # so make local copy, otherwise the changed y affects results
+            dp = 0.  # no change at start
             for i in range(iterations):
+                p -= dp
                 p2 = p**2
                 p6 = p**6
-                dy = p*(A1 + A2*p2 + p6*(A3 + A4*p2)) - y
-                fy = A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2)
-                dp = dy/fy
-                p -= dp
-                if np.abs(dp) < limit: break
-            long = M * x * (A1 + 3.*A2*p2 + p6*(7.*A3 + 9.*A4*p2))/np.cos(p)
-            lat = np.arcsin(p)/M
+                fy = p*(A1 + A2*p2 + p6*(A3 + A4*p2)) - y
+                dy = A1 + A23*p2 + p6*(A37 + A49*p2)
+                dp = fy/dy
+                if (np.abs(dp) < limit).all(): break
+            long = M * x * dy/np.cos(p)
+            lat = np.arcsin(np.sin(p)/M)
             result = np.column_stack([long, lat])
             if not self._rad: result = np.rad2deg(result)
             return result
