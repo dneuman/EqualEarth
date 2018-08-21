@@ -15,6 +15,9 @@ from Anaconda, but must be installed first::
 
     >>>conda install shapefile
 
+@Author: Dan Neuman (@dan613)
+@Version: 1.0
+@Date: 20 Aug 2018
 """
 
 import shapefile

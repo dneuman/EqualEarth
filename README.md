@@ -38,7 +38,7 @@ Matplotlib so that it can be used when creating a subplot:
     >>>longs = [-110, 100, 100, -110]
     >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
-    >>>ax = fig.add_subplot(111, projection="equal_earth")
+    >>>ax = fig.add_subplot(111, projection='equal_earth')
     >>>ax.plot(longs, lats)
     >>>plt.grid(True)
     >>>plt.show()
@@ -46,7 +46,14 @@ Matplotlib so that it can be used when creating a subplot:
 ![Result](charts/result.png)
 
 Note that the default behaviour is to take all data in degrees. If radians
-are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``.
+are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,
+ie:
+
+    >>>ax = fig.add_subplot(111, projection='equal_earth', rad=True)
+
+All plots must be done in radians at this point. An example drawing map
+figures and the Tissot circles is in the [Coastlines.py](https://github.com/dneuman/EqualEarth/blob/master/Coastlines.py)
+file.
 
 Sources
 -------

@@ -36,15 +36,23 @@ Matplotlib so that it can be used when creating a subplot::
     >>>longs = [-200, 100, 100, -200]
     >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
-    >>>ax = fig.add_subplot(111, projection="equal_earth")
+    >>>ax = fig.add_subplot(111, projection='equal_earth')
     >>>ax.plot(longs, lats)
     >>>plt.grid(True)
     >>>plt.show()
 
 Note that the default behaviour is to take all data in degrees. If radians
-are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``.
+are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,
+ie::
+
+    >>>ax = fig.add_subplot(111, projection='equal_earth', rad=True)
+
+All plots must be done in radians at this point.
+
 
 @Author: Dan Neuman (@dan613)
+@Version: 1.0
+@Date: 20 Aug 2018
 """
 
 from __future__ import unicode_literals
