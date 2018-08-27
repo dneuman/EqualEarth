@@ -16,14 +16,21 @@ from Anaconda, but must be installed first::
     >>>conda install shapefile
 
 @Author: Dan Neuman (@dan613)
-@Version: 1.0
-@Date: 20 Aug 2018
+@Version: 1.1
+@Date: 27 Aug 2018
+
+New in this version
+-------------------
+* The main routine changes map colors without changing global colors
+* The DrawCoastlines routine has simplified color arguments. The water color
+  comes from the axes color, and the coastline and lake edge colors are the
+  same. The land color is specified with ``facecolor`` or ``fc``, and the
+  coastline and lake edge color is specified with ``edgecolor`` or ``ec``.
 """
 
 import shapefile
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import matplotlib
 import numpy as np
 import EqualEarth  # Automatically registers in matplotlib on import
 
@@ -137,8 +144,8 @@ def DrawTissot(ax, width=10., resolution=50):
     ax.set_title('Equal Earth Projection with\n'
                  'Tissot Indicatrices of Deformation')
 
-def DrawCoastlines(ax, paths=None, edgedict=None, facedict=None,
-                   linewidth=.25):
+def DrawCoastlines(ax, paths=None, edgecolor='k', facecolor='#FEFEE6',
+                   linewidth=.25, **kwargs):
     """
     Draw land masses, coastlines, and major lakes. Colors and linewidth
     can be supplied.
@@ -151,47 +158,45 @@ def DrawCoastlines(ax, paths=None, edgedict=None, facedict=None,
         List of paths to map data, if they aren't in the default location. The
         paths may be fully-specified or relative, and must be in format:
             ['land path', 'coastline path', 'lake path']
-    edgedict : dict, optional, default: None
-        Optional dictionary for line colors.
-        The dict keys must be any of ['land', 'coast', 'lakes']
-    facedict : dict, optional, default: None
-        Optional dictionary for interior colors.
-        The dict keys must be any of ['land', 'coast', 'lakes']
-    linewidth : float, optional, default: .25
-        Line width of coastlines
+    edgecolor, ec : color, optional, default: black
+        Color for coastlines and lake edges. ``ec`` can be used as a shortcut.
+    facecolor, fc : color, optional, default: yellow
+        Color for land. ``fc`` can be used as a shortcut.
+    linewidth, lw : float, optional, default: .25
+        Line width of coastlines and lake edges.
     """
-    # Set up default colors
-    yellow = '#FEFEE6' # wikipedia map colors (roughly)
-    blue = '#CEEAFD'
-    keys =               ['land', 'coast', 'lakes']
-    ecd = dict(zip(keys, ['none', 'k',     'k']))  # edgecolors
-    fcd = dict(zip(keys, [yellow, 'none',  blue])) # facecolors
-    # Update with any supplied colors
-    if edgedict: ecd.update(edgedict)
-    if facedict: fcd.update(facedict)
+
+    # Set up colors, overriding defaults if shortcuts given
+    bc = ax.get_facecolor()           # background color
+    ec = kwargs.get('ec', edgecolor)  # edge color
+    fc = kwargs.get('fc', facecolor)  # face color
+    lw = kwargs.get('lw', linewidth)  # line width
+
+    #        land   coast   lakes
+    edges = ['none', ec,    ec]
+    faces = [fc,    'none', bc]
+
     if not paths:
         paths = ['maps/ne_110m_land/ne_110m_land',
                  'maps/ne_110m_coastline/ne_110m_coastline',
                  'maps/ne_110m_lakes/ne_110m_lakes']
     z = 0.
-    for path, key in zip(paths, keys):
+    for path, f, e in zip(paths, faces, edges):
         sf = shapefile.Reader(path)
-        DrawShapes(ax, sf, lw=linewidth, zorder=z,
-                   edgecolor=ecd[key], facecolor=fcd[key])
+        DrawShapes(ax, sf, linewidth=lw, zorder=z,
+                   edgecolor=e, facecolor=f)
         z += .1
 
 if __name__ == '__main__':
-    yellow = '#FEFEE6'
     blue = '#CEEAFD'
 
-    matplotlib.rcParams['figure.facecolor'] = 'w'
-    matplotlib.rcParams['axes.facecolor'] = blue
-    matplotlib.rcParams['axes.edgecolor'] = 'k'
-    matplotlib.rcParams['grid.color'] = 'k'
-    matplotlib.rcParams['grid.alpha'] = .15
-
     ax = GetAxes('Equal Earth Tissot', show_labels=False,
-                 figprops={'figsize': (10., 6.)})
+                 figprops={'figsize': (10., 6.),
+                           'facecolor': 'w'},
+                 facecolor=blue)
+    ax.spines['geo'].set_color('k')
+    ax.grid(color='k', alpha=.15)
+
     DrawCoastlines(ax)
     DrawTissot(ax)
 
