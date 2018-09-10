@@ -555,14 +555,25 @@ class GeoAxes(Axes):
             Keyword arguments to send to the patch object. This will generally
             be edge and face colors, line widths, alpha, etc.
         """
+        # Map points are in degrees, so must be converted if underlying
+        # projection is in radians. Use a null function that does nothing
+        # if the projection is in degrees.
+        def null_convert(vals):
+            return vals
+
+        if self._rad:
+            convert = np.deg2rad
+        else:
+            convert = null_convert
+
         if sf.shapeType == shapefile.POLYGON:
             for shape in sf.shapes():
-                verts = shape.points
+                verts = convert(shape.points)
                 patch = patches.Polygon(verts, **kwargs)
                 self.add_patch(patch)
         elif sf.shapeType == shapefile.POLYLINE:
             for shape in sf.shapes():
-                verts = shape.points
+                verts = convert(shape.points)
                 path = patches.mlines.Path(verts)
                 patch = patches.PathPatch(path, **kwargs)
                 self.add_patch(patch)
