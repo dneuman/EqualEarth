@@ -482,6 +482,67 @@ class GeoAxes(Axes):
             finally:
                 zfile.close()
 
+    def _DrawEllipse(self, ll, width_deg, resolution=50):
+        """
+        Draw an ellipse. Technically, a circle is drawn (an
+        ellipse with equal height and width), but this usually becomes
+        an ellipse on the projection axes.
+
+        Parameters
+        ----------
+        ll : tuple of floats
+            longitude and latitude coordinates (in degrees) to draw the ellipse
+        width_deg : float
+            Width of ellipse in degrees
+        resolution : int, optional, default: 50
+            number of points to use in drawing the ellipse
+        """
+        # expect ll in degrees, so must
+        # change ll to radians if that is the base unit
+        if self._rad: ll = np.deg2rad(ll)
+        long, lat = ll
+        # Width as longitude range gets smaller as you go to the poles, so this
+        # must be adjusted by the cosine of the latitude.
+        if self._rad:
+            height = np.deg2rad(width_deg)/2.  # use as radius, not diameter
+            width = height/np.cos(lat)
+        else:
+            height = width_deg/2.
+            width = height/np.cos(np.deg2rad(lat))
+        # Use a path instead of the regular Ellipse patch to improve resolution
+        t = np.linspace(0., 2. * np.pi, resolution)
+        t = np.r_[t, [0]]  # append starting point to close path
+        longs = width * np.cos(t) + long
+        lats = height * np.sin(t) + lat
+        verts = np.column_stack([longs, lats])
+        patch = patches.Polygon(verts,
+                                facecolor='r', alpha=.4,
+                                edgecolor='none', zorder=5.)
+        self.add_patch(patch)
+
+    def DrawTissot(self, width=10., resolution=50):
+        """
+        Draw Tissot Indicatrices of Deformation over the map projection to show
+        how the projection deforms equally-sized circles at various points
+        on the map.
+
+        Parameters
+        ----------
+        width : float, optional, default: 5.
+            width of circles in degrees of latitude
+        resolution : int, optional, default: 50
+            Number of points in circle
+        """
+        degrees = 30
+        for lat in range(-degrees, degrees+1, degrees):
+            for long in range(-180, 181, degrees):
+                self._DrawEllipse([long, lat], width, resolution)
+        for lat in [-60, 60]:
+            for long in range(-180, 181, 2*degrees):
+                self._DrawEllipse([long, lat], width, resolution)
+        for lat in [-90, 90]:
+            self._DrawEllipse([0, lat], width, resolution)
+
     def DrawShapes(self, sf, **kwargs):
         """
         Draw shapes from the supplied shapefile
@@ -506,38 +567,6 @@ class GeoAxes(Axes):
                 patch = patches.PathPatch(path, **kwargs)
                 self.add_patch(patch)
 
-    def DrawEllipse(self, ll, width_deg, resolution=50):
-        """
-        Draw an ellipse. Technically, a circle is drawn (an
-        ellipse with equal height and width), but this usually becomes
-        an ellipse on the projection axes.
-
-        Parameters
-        ----------
-        ll : tuple of floats
-            longitude and latitude coordinates (in degrees) to draw the ellipse
-        width_deg : float
-            Width of ellipse in degrees
-        resolution : int, optional, default: 50
-            number of points to use in drawing the ellipse
-        """
-        if not self._rad: ll = np.deg2rad(ll)
-        long, lat = ll
-        # Use a path instead of the regular Ellipse patch to improve resolution
-        if self._rad:
-            height = np.deg2rad(width_deg)/2.  # use as radius, not diameter
-        else:
-            height = width_deg/2.
-        width = height/np.cos(np.deg2rad(lat))
-        t = np.linspace(0., 2. * np.pi, resolution)
-        t = np.r_[t, [0]]  # append starting point to close path
-        longs = width * np.cos(t) + long
-        lats = height * np.sin(t) + lat
-        verts = np.column_stack([longs, lats])
-        patch = patches.Polygon(verts,
-                                facecolor='r', alpha=.4,
-                                edgecolor='none', zorder=5.)
-        self.add_patch(patch)
 
 
 
