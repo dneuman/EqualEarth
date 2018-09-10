@@ -75,6 +75,7 @@ from zipfile import ZipFile
 import pathlib
 import io
 from urllib.request import urlopen
+import shapefile  # available via:  conda install shapefile
 
 rcParams = matplotlib.rcParams
 
@@ -481,6 +482,64 @@ class GeoAxes(Axes):
             finally:
                 zfile.close()
 
+    def DrawShapes(self, sf, **kwargs):
+        """
+        Draw shapes from the supplied shapefile
+
+        Parameters
+        ----------
+        sf : shapefile.Reader object
+            The shapefile containing the shapes to draw
+        kwargs : optional
+            Keyword arguments to send to the patch object. This will generally
+            be edge and face colors, line widths, alpha, etc.
+        """
+        if sf.shapeType == shapefile.POLYGON:
+            for shape in sf.shapes():
+                verts = shape.points
+                patch = patches.Polygon(verts, **kwargs)
+                self.add_patch(patch)
+        elif sf.shapeType == shapefile.POLYLINE:
+            for shape in sf.shapes():
+                verts = shape.points
+                path = patches.mlines.Path(verts)
+                patch = patches.PathPatch(path, **kwargs)
+                self.add_patch(patch)
+
+    def DrawEllipse(self, ll, width_deg, resolution=50):
+        """
+        Draw an ellipse. Technically, a circle is drawn (an
+        ellipse with equal height and width), but this usually becomes
+        an ellipse on the projection axes.
+
+        Parameters
+        ----------
+        ll : tuple of floats
+            longitude and latitude coordinates (in degrees) to draw the ellipse
+        width_deg : float
+            Width of ellipse in degrees
+        resolution : int, optional, default: 50
+            number of points to use in drawing the ellipse
+        """
+        if not self._rad: ll = np.deg2rad(ll)
+        long, lat = ll
+        # Use a path instead of the regular Ellipse patch to improve resolution
+        if self._rad:
+            height = np.deg2rad(width_deg)/2.  # use as radius, not diameter
+        else:
+            height = width_deg/2.
+        width = height/np.cos(np.deg2rad(lat))
+        t = np.linspace(0., 2. * np.pi, resolution)
+        t = np.r_[t, [0]]  # append starting point to close path
+        longs = width * np.cos(t) + long
+        lats = height * np.sin(t) + lat
+        verts = np.column_stack([longs, lats])
+        patch = patches.Polygon(verts,
+                                facecolor='r', alpha=.4,
+                                edgecolor='none', zorder=5.)
+        self.add_patch(patch)
+
+
 
 class EqualEarthAxes(GeoAxes):
     """
@@ -664,7 +723,7 @@ register_projection(EqualEarthAxes)
 
 _test=True
 
-if _test:
+if _test and __name__ == '__main__':
     fig = plt.figure('test')
     fig.clear()
     ax = fig.add_subplot(111, projection="equal_earth", rad=True)
