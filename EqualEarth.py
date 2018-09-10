@@ -445,7 +445,10 @@ class GeoAxes(Axes):
 #=====================================================
 #       Mapping Functions
 #=====================================================
-# %% mapping
+# iPython label
+# %% Mapping
+
+# These mapping functions will work with any projection based on GeoAxes
 
     _paths = ['maps/ne_110m_land/ne_110m_land',
           'maps/ne_110m_coastline/ne_110m_coastline',
@@ -586,11 +589,9 @@ class GeoAxes(Axes):
 
         Parameters
         ----------
-        ax : axes
-            axes to draw on
         paths : list of str, optional, default: None
             List of paths to map data, if they aren't in the default location. The
-            paths may be fully-specified or relative, and must be in format:
+            paths may be fully-specified or relative, and must be in order:
                 ['land path', 'coastline path', 'lake path']
         edgecolor, ec : color, optional, default: black
             Color for coastlines and lake edges. ``ec`` can be used as a shortcut.
@@ -618,6 +619,186 @@ class GeoAxes(Axes):
             self.DrawShapes(sf, linewidth=lw, zorder=z,
                             edgecolor=e, facecolor=f)
             z += .1
+
+# %% Geodesic
+
+    def Get_geodesic_heading_distance(self, ll1, ll2):
+        """
+        Return the heading and angular distance between two points. Angular
+        distance is the angle between two points with Earth centre. To get actual
+        distance, multiply the angle (in radians) by Earth radius. Heading is the
+        angle between the path and true North.
+
+        Math is found at http://en.wikipedia.org/wiki/Great-circle_navigation
+
+        Parameters
+        ----------
+        ll1, ll2 : tuples of 2 floats
+            start and end points as (longitude, latitude) tuples or lists
+        """
+        # Notation: *0 refers to node 0 where great circle intersects equator
+        #           *1 refers to first point
+        #           *01 refers to angle between node 0 and point 1
+
+        # Heading is the angle between the path and true North.
+
+        if not self._rad:
+            ll1, ll2 = np.deg2rad((ll1, ll2))
+        # simplify math notation
+        cos = np.cos
+        sin = np.sin
+        atan = np.arctan2  # handles quadrants better than np.arctan
+        # unpack longitudes and latitudes
+        lon1, lat1 = ll1
+        lon2, lat2 = ll2
+        lon12 = lon2 - lon1  # longitudinal angle between the two points
+        if lon12 > np.pi:
+            lon12 -= np.pi * 2.
+        elif lon12 < -np.pi:
+            lon12 += np.pi * 2.
+
+        y1 = cos(lat2) * sin(lon12)
+        x1 = (cos(lat1) * sin(lat2)) - (sin(lat1) * cos(lat2) * cos(lon12))
+        h1 = atan(y1, x1)  # heading of path
+
+        y12 = np.sqrt((cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(lon12))**2 + \
+                      (cos(lat2)*sin(lon12))**2)
+        x12 = sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon12)
+        d12 = atan(y12, x12)  # angular distance in radians
+        if not self._rad:
+            ll1 = np.rad2deg(ll1)
+            h1, d12 = np.rad2deg((h1, d12))
+        return ll1, h1, d12
+
+    def Get_geodesic_waypoints(self, ll1, h1, d12):
+        """
+        Return an array of waypoints on the geodesic line given the start location,
+        the heading, and the distance. The array will be in the native units
+        (radians or degrees).
+
+        Math is found at http://en.wikipedia.org/wiki/Great-circle_navigation
+
+        Parameters
+        ----------
+        ll1 : tuple or list of floats
+            The longitude and latitude of the start point
+        h1 : float
+            Heading (angle from North) from the start point
+        d12 : float
+            Angular distance to destination point
+        """
+        # Notation: *0 refers to node 0 where great circle intersects equator
+        #           *1 refers to first point
+        #           *01 refers to angle between node 0 and point 1
+
+        # Angular distance is the angle between two points with Earth centre. To
+        # get actual distance, multiply the angle (in radians) by Earth radius.
+
+        # Heading is the angle between the path and true North.
+
+        if not self._rad:
+            ll1 = np.deg2rad(ll1)
+            h1, d12 = np.deg2rad((h1, d12))
+        lon1, lat1 = ll1
+        # simplify math notation
+        cos = np.cos
+        sin = np.sin
+        tan = np.tan
+        atan = np.arctan2  # handles quadrants better than np.arctan
+        # calculate where great circle crosses equator (node 0)
+        y0 = sin(h1) * cos(lat1)
+        x0 = np.sqrt(cos(h1)**2 + (sin(h1) * sin(lat1))**2)
+        h0 = atan(y0, x0)  # heading at crossing point
+        d01 = atan(tan(lat1), cos(h1))  # angular distance from node 0 to point 1
+        lon01 = atan(sin(h0) * sin(d01), cos(d01))
+        lon0 = lon1 - lon01
+        # create array of angular distances from node 0 to use
+        ds = np.linspace(d01, d01+d12, self.RESOLUTION)
+        # now calculate the latitudes and longitudes
+        ys = cos(h0) * sin(ds)
+        xs = np.sqrt(cos(ds)**2 + (sin(h0) * sin(ds))**2)
+        lats = atan(ys, xs)
+        lons = atan(sin(h0) * sin(ds), cos(ds)) + lon0
+        if np.abs(lons[-1]) > np.pi:
+            lons = (lons + np.pi) % (2. * np.pi) - np.pi
+        result = np.column_stack([lons, lats])  # lons are left-right, so go first
+        if not self._rad: result = np.rad2deg(result)
+        return result
+
+    def Get_geodesic_points(self, ll1, ll2):
+        """
+        Return a list of arrays of points on the shortest path between
+        two endpoints. Because the map wraps at +/- 180°, two arrays may be
+        returned in the list.
+
+        Parameters
+        ----------
+        ll1, ll2 : list-like
+            (longitude, latitude) endpoints of the path
+        """
+        ll1, h1, d12 = self.Get_geodesic_heading_distance(ll1, ll2)
+        verts = self.Get_geodesic_waypoints(ll1, h1, d12)
+
+        # The map wraps around at +/- 180°, so the path must be broken up if path
+        # wraps. Each part of the path must include one point outside the map
+        # to make the path intersect with the border correctly.
+
+        # return simple path if it doesn't wrap around
+        # detect wrap by large change in longitude
+        limit = 2. * self._limit
+        diffs = verts[:-1, 0] - verts[1:, 0]  # change between each point and next
+        i_chg, = (np.abs(diffs) > limit).nonzero()
+        if len(i_chg) == 0:
+            return [verts]
+
+        # break into two parts, including a point for outside the map
+        len1 = i_chg[0] + 1
+        verts1 = verts[0:len1+1].copy()
+        verts2 = verts[len1-1:].copy()
+
+        # now fix the change points so they lie outside the map
+        if verts1[0, 0] < 0:  # start is on the left (-ve)
+            verts1[-1, 0] -= 2. * limit
+            verts2[ 0, 0] += 2. * limit
+        else:
+            verts1[-1, 0] += 2. * limit
+            verts2[ 0, 0] -= 2. * limit
+
+        return [verts1, verts2]
+
+    def plot_geodesic(self, *args, **kwargs):
+        """
+        Plot a geodesic path (shortest path on globe) between a series of points.
+        The points must be given as (longitude, latitude) pairs, and there must
+        be at least 2 pairs.
+
+        Returns a list of lines.
+
+        Parameters
+        ----------
+        ax : axes (subplot)
+            The axes to draw on
+        data : array of floats
+            The data may be an (n, 2) array of floats of longitudes and latitudes,
+            or it may be as two separate arrays or lists of longitudes and
+            latitudes, eg ``plot_geodesic(ax, lons, lats, **kwargs)``.
+        **kwargs : keyword arguments to pass to the ax.plot() function
+        """
+        results = []
+        if (len(args) > 1) and (len(args[0].shape) == 1):
+            points = np.column_stack([args[0], args[1]])
+        elif len(args[0].shape) == 2:
+            points = args[0]
+        else:
+            errmsg = ('Data points must be given as: '
+                      'plot_geodesic(ax, lons, lats, **kwargs) or ',
+                      'plot_geodesic(ax, points, **kwargs)')
+            raise TypeError(errmsg)
+        for i in range(len(points)-1):
+            pts_list = self.Get_geodesic_points(points[i], points[i+1])
+            for pts in pts_list:
+                results.append(self.plot(pts[:,0], pts[:,1], **kwargs))
+        return results
 
 
 
