@@ -776,28 +776,42 @@ class GeoAxes(Axes):
 
         Parameters
         ----------
-        ax : axes (subplot)
-            The axes to draw on
         data : array of floats
             The data may be an (n, 2) array of floats of longitudes and latitudes,
             or it may be as two separate arrays or lists of longitudes and
             latitudes, eg ``plot_geodesic(ax, lons, lats, **kwargs)``.
+        *args : values to pass to the ax.plot() function
+            These are positional, specifically the color/style string
         **kwargs : keyword arguments to pass to the ax.plot() function
         """
         results = []
-        if (len(args) > 1) and (len(args[0].shape) == 1):
-            points = np.column_stack([args[0], args[1]])
-        elif len(args[0].shape) == 2:
-            points = args[0]
+        if (len(args) == 0):
+            raise RuntimeError('No values were provided')
+
+        a0 = np.array(args[0])
+        args = args[1:]
+        if len(a0.shape) == 1:  # have x values
+            if len(args) == 0:  # but no y values
+                raise RuntimeError('Need both x and y values')
+            a1 = np.array(args.pop(0))
+            args = args[1:]
+            if len(a1.shape)==0:  # second arg not an array
+                raise RuntimeError('Need both x and y values')
+            points = np.column_stack([a0, a1])  # put x and y together
+        elif len(a0.shape) == 2:  # have an (n, m) array
+            if a0.shape[1] != 2:  # not an (n, 2) array
+                raise ValueError('Must be an (n, 2) array or list')
+            points = a0
         else:
             errmsg = ('Data points must be given as: '
-                      'plot_geodesic(ax, lons, lats, **kwargs) or ',
-                      'plot_geodesic(ax, points, **kwargs)')
+                      'plot_geodesic(ax, lons, lats, *args, **kwargs) or ',
+                      'plot_geodesic(ax, points, *args, **kwargs)')
             raise TypeError(errmsg)
         for i in range(len(points)-1):
             pts_list = self.Get_geodesic_points(points[i], points[i+1])
             for pts in pts_list:
-                results.append(self.plot(pts[:,0], pts[:,1], **kwargs))
+                results.append(self.plot(pts[:,0], pts[:,1],
+                                         *args, **kwargs))
         return results
 
 
@@ -983,31 +997,27 @@ class EqualEarthAxes(GeoAxes):
 register_projection(EqualEarthAxes)
 
 _test=True
+_blue = '#CEEAFD'
 
 if _test and __name__ == '__main__':
-    fig = plt.figure('test')
+    fig = plt.figure('test', figsize=(10., 6.))
     fig.clear()
-    ax = fig.add_subplot(111, projection="equal_earth", rad=True)
-    ax._CheckMaps(check_only=False)
+    ax = fig.add_subplot(111, projection='equal_earth', facecolor=_blue)
+    ax.tick_params(labelcolor=(0,0,0,.3))
+    pts = np.array([[-75, 45],
+                    [-123, 49],
+                    [-158, 21],
+                    [131, -12.5],
+                    [32.5, -26],
+                    [105, 30.5],
+                    [-75, 45]])
+    ax.DrawCoastlines()
+    ax.plot(pts[:,0], pts[:,1], 'ro')
+    ax.plot_geodesic(pts, 'b:')
+    ax.grid(lw=.25)
+    plt.tight_layout()
     plt.show()
 
-
-elif __name__ == '__main__':
-    # Now make a simple example using the custom projection.
-    longs = [-200, 100, 100, -200]
-    lats = [40, 40, -40, 40]
-    fig = plt.figure('Equal Earth (Radians)')
-    fig.clear()
-    ax = fig.add_subplot(111, projection="equal_earth", rad=True)
-    ax.plot(np.deg2rad(longs), np.deg2rad(lats))
-    plt.grid(True)
-    plt.tight_layout()
-
-    figd = plt.figure('Equal Earth (Degrees)')
-    figd.clear()
-    axd = figd.add_subplot(111, projection='equal_earth')
-    axd.plot(longs, lats)
-    plt.grid(True)
-    plt.tight_layout()
-
-    plt.show()
+    p = pts[2:4]
+    ll1, h1, d12 = ax.Get_geodesic_heading_distance(p[0], p[1])
+    verts = ax.Get_geodesic_waypoints(ll1, h1, d12)
