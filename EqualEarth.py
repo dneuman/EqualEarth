@@ -58,6 +58,7 @@ All plots must be done in radians at this point.
 from __future__ import unicode_literals
 
 import matplotlib
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle
 from matplotlib.path import Path
@@ -68,6 +69,12 @@ from matplotlib.projections import register_projection
 import matplotlib.spines as mspines
 import matplotlib.axis as maxis
 import numpy as np
+
+# Mapping support
+from zipfile import ZipFile
+import pathlib
+import io
+from urllib.request import urlopen
 
 rcParams = matplotlib.rcParams
 
@@ -434,6 +441,46 @@ class GeoAxes(Axes):
     def drag_pan(self, button, key, x, y):
         pass
 
+#=====================================================
+#       Mapping Functions
+#=====================================================
+# %% mapping
+
+    _paths = ['maps/ne_110m_land/ne_110m_land',
+          'maps/ne_110m_coastline/ne_110m_coastline',
+          'maps/ne_110m_lakes/ne_110m_lakes']
+    _names = ['land', 'coastline', 'lakes']
+
+
+    def _CheckMaps(self, check_only=True):
+        """
+        Check to see if the maps already exist, otherwise download them from
+        Natural Earth's content delivery network. It will be downloaded into the
+        same directory as the EqualEarth module, in the 'maps' subdirectory.
+        """
+        url_template = ('http://naciscdn.org/naturalearth/110m'
+                        '/physical/ne_110m_{name}.zip')
+        path_template = 'ne_110m_{name}'
+        p = pathlib.Path(__file__)
+        pdir = p.parent
+        print(pdir)
+        mdir = pdir / 'maps'  # module maps directory
+        if mdir.exists(): return True
+        if check_only: return False
+
+        # Now get the zip files
+        mdir.mkdir()
+        for name in self._names:
+            url = url_template.format(name=name)
+            mapdir = mdir / path_template.format(name=name)
+            mapdir.mkdir()
+            try:
+                ne_file = urlopen(url)
+                zfile = ZipFile(io.BytesIO(ne_file.read()), 'r')
+                zfile.extractall(mapdir)
+            finally:
+                zfile.close()
+
 
 class EqualEarthAxes(GeoAxes):
     """
@@ -615,9 +662,17 @@ class EqualEarthAxes(GeoAxes):
 # it.
 register_projection(EqualEarthAxes)
 
+_test=True
 
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
+if _test:
+    fig = plt.figure('test')
+    fig.clear()
+    ax = fig.add_subplot(111, projection="equal_earth", rad=True)
+    ax._CheckMaps(check_only=False)
+    plt.show()
+
+
+elif __name__ == '__main__':
     # Now make a simple example using the custom projection.
     longs = [-200, 100, 100, -200]
     lats = [40, 40, -40, 40]
