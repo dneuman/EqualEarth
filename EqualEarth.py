@@ -567,6 +567,46 @@ class GeoAxes(Axes):
                 patch = patches.PathPatch(path, **kwargs)
                 self.add_patch(patch)
 
+    def DrawCoastlines(self, paths=None, edgecolor='k', facecolor='#FEFEE6',
+                       linewidth=.25, **kwargs):
+        """
+        Draw land masses, coastlines, and major lakes. Colors and linewidth
+        can be supplied.
+
+        Parameters
+        ----------
+        ax : axes
+            axes to draw on
+        paths : list of str, optional, default: None
+            List of paths to map data, if they aren't in the default location. The
+            paths may be fully-specified or relative, and must be in format:
+                ['land path', 'coastline path', 'lake path']
+        edgecolor, ec : color, optional, default: black
+            Color for coastlines and lake edges. ``ec`` can be used as a shortcut.
+        facecolor, fc : color, optional, default: yellow
+            Color for land. ``fc`` can be used as a shortcut.
+        linewidth, lw : float, optional, default: .25
+            Line width of coastlines and lake edges.
+        """
+
+        # Set up colors, overriding defaults if shortcuts given
+        bc = self.get_facecolor()         # background color
+        ec = kwargs.get('ec', edgecolor)  # edge color
+        fc = kwargs.get('fc', facecolor)  # face color
+        lw = kwargs.get('lw', linewidth)  # line width
+
+        #        land   coast   lakes
+        edges = ['none', ec,    ec]
+        faces = [fc,    'none', bc]
+
+        if not paths:
+            paths = self._paths
+        z = 0.
+        for path, f, e in zip(paths, faces, edges):
+            sf = shapefile.Reader(path)
+            self.DrawShapes(sf, linewidth=lw, zorder=z,
+                            edgecolor=e, facecolor=f)
+            z += .1
 
 
 
