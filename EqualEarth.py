@@ -26,6 +26,13 @@ Abstract:
     evaluate. Continental outlines are shown in a visually pleasing and
     balanced way."
 
+Requirements
+------------
+shapefile (from pyshp) is required to read the map data. This is available
+from Anaconda, but must be installed first, from the command line::
+
+    >>>conda install shapefile
+
 Usage
 -----
 Importing the module causes the Equal Earth projection to be registered with

@@ -28,6 +28,13 @@ where:
 * A3 =  0.000893
 * A4 =  0.003796
 
+Requirements
+------------
+shapefile (from pyshp) is required to read the map data. This is available
+from Anaconda, but must be installed first, from the command line::
+
+    >>>conda install shapefile
+
 Usage
 -----
 Importing the module causes the Equal Earth projection to be registered with
