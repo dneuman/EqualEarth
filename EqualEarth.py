@@ -709,7 +709,7 @@ class GeoAxes(Axes):
         y0 = sin(h1) * cos(lat1)
         x0 = np.sqrt(cos(h1)**2 + (sin(h1) * sin(lat1))**2)
         h0 = atan(y0, x0)  # heading at crossing point
-        d01 = atan(tan(lat1), cos(h1))  # angular distance from node 0 to point 1
+        d01 = atan(tan(lat1), cos(h1))  # angular distance from node 0 to pt 1
         lon01 = atan(sin(h0) * sin(d01), cos(d01))
         lon0 = lon1 - lon01
         # create array of angular distances from node 0 to use
@@ -719,9 +719,9 @@ class GeoAxes(Axes):
         xs = np.sqrt(cos(ds)**2 + (sin(h0) * sin(ds))**2)
         lats = atan(ys, xs)
         lons = atan(sin(h0) * sin(ds), cos(ds)) + lon0
-        if np.abs(lons[-1]) > np.pi:
+        if (np.abs(lons) > np.pi).any():  # check if any points outside map
             lons = (lons + np.pi) % (2. * np.pi) - np.pi
-        result = np.column_stack([lons, lats])  # lons are left-right, so go first
+        result = np.column_stack([lons, lats])  # lons (x) go first
         if not self._rad: result = np.rad2deg(result)
         return result
 
@@ -992,32 +992,27 @@ class EqualEarthAxes(GeoAxes):
         inverted.__doc__ = Transform.inverted.__doc__
 
 
-# Now register the projection with matplotlib so the user can select
-# it.
+# Now register the projection with matplotlib so the user can select it.
 register_projection(EqualEarthAxes)
 
-_test=True
-_blue = '#CEEAFD'
-
-if _test and __name__ == '__main__':
-    fig = plt.figure('test', figsize=(10., 6.))
+if __name__ == '__main__':
+    fig = plt.figure('Equal Earth', figsize=(10., 6.))
     fig.clear()
-    ax = fig.add_subplot(111, projection='equal_earth', facecolor=_blue)
-    ax.tick_params(labelcolor=(0,0,0,.3))
+    ax = fig.add_subplot(111, projection='equal_earth',
+                         facecolor='#CEEAFD')
+    ax.tick_params(labelcolor=(0,0,0,.25))
     pts = np.array([[-75, 45],
                     [-123, 49],
                     [-158, 21],
-                    [131, -12.5],
+                    [116, -32],
                     [32.5, -26],
                     [105, 30.5],
                     [-75, 45]])
     ax.DrawCoastlines()
-    ax.plot(pts[:,0], pts[:,1], 'ro')
-    ax.plot_geodesic(pts, 'b:')
+    ax.plot(pts[:,0], pts[:,1], 'ro', markersize=4)
+    ax.plot_geodesic(pts, 'b:', lw=2)
     ax.grid(lw=.25)
+    ax.set_title('Equal Earth Projection with Great Circle Lines',
+                 size='x-large')
     plt.tight_layout()
     plt.show()
-
-    p = pts[2:4]
-    ll1, h1, d12 = ax.Get_geodesic_heading_distance(p[0], p[1])
-    verts = ax.Get_geodesic_waypoints(ll1, h1, d12)
