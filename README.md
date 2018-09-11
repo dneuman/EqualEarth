@@ -1,6 +1,6 @@
 Equal Earth Projection
 ======================
-The Equal Earth map projection is a ``matplotlib`` add-on based on the
+The Equal Earth map projection is a `matplotlib` add-on based on the
 projection developed by Bojan Šavrič (@BojanSavric), Tom Patterson and
 Bernhard Jenny:
 
@@ -46,14 +46,43 @@ Matplotlib so that it can be used when creating a subplot:
 ![Result](charts/result.png)
 
 Note that the default behaviour is to take all data in degrees. If radians
-are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,
+are preferred, use the `rad=True` optional keyword in `fig.add_subplot()`,
 ie:
 
     >>>ax = fig.add_subplot(111, projection='equal_earth', rad=True)
 
-All plots must be done in radians at this point. An example drawing map
-figures and the Tissot circles is in the [Coastlines.py](https://github.com/dneuman/EqualEarth/blob/master/Coastlines.py)
-file.
+All plots must be done in radians at this point.
+
+New in This Version (2.0)
+-------------------------
+DrawCoastlines:
+    World map data from `Natural Earth <https://www.naturalearthdata.com>`_
+    will download into the `maps` folder in the same directory as the
+    Equal Earth module. This is 500kb on disk, but is downloaded in .zip format
+    and unzipped automatically. Other maps can be used if you supply the shape
+    files. Once the axes is set up, you can draw the continents::
+
+        >>>ax.DrawCoastlines(facecolor='grey', edgecolor='none')
+
+Great Circle (geodesic) lines:
+    Navigation lines can be plotted using the shortest path on the globe. These
+    lines take plot keywords and wrap around if necessary.::
+
+        >>>pts = np.array([[-150, 45], [150, 45]])
+        >>>ax.plot_geodesic(pts, 'b:', linewidth=1, alpha=.8)
+
+Plot Note
+---------
+Lines drawn by `ax.plot()` method are clipped by the projection if any portions
+are outside it due to points being greater than +/- 180° in longitude. If you
+want to show lines wrapping around, they must be drawn twice. The second time
+will require the outside points put back into the correct range, but with their
+connecting points now outside the projection.
+
+Future Work
+-----------
+Ideally, this projection should be in Cartopy, where there are far more
+features available. I will be doing what I can to make this happen.
 
 Sources
 -------
