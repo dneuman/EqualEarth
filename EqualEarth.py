@@ -49,10 +49,36 @@ ie::
 
 All plots must be done in radians at this point.
 
+New in This Version (2.0)
+-------------------------
+DrawCoastlines:
+    World map data from `Natural Earth <https://www.naturalearthdata.com>`_
+    will download into the ``maps`` folder in the same directory as the
+    Equal Earth module. This is 500kb on disk, but is downloaded in .zip format
+    and unzipped automatically. Other maps can be used if you supply the shape
+    files. Once the axes is set up, you can draw the continents::
+
+        >>>ax.DrawCoastlines(facecolor='grey', edgecolor='none')
+
+Great Circle (geodesic) lines:
+    Navigation lines can be plotted using the shortest path on the globe. These
+    lines take plot keywords and wrap around if necessary.::
+
+        >>>pts = np.array([[-150, 45], [150, 45]])
+        >>>ax.plot_geodesic(pts, 'b:', linewidth=1, alpha=.8)
+
+Plot Note
+---------
+Lines drawn by `ax.plot()` method are clipped by the projection if any portions
+are outside it due to points being greater than +/- 180° in longitude. If you
+want to show lines wrapping around, they must be drawn twice. The second time
+will require the outside points put back into the correct range, but with their
+connecting points now outside the projection.
+
 
 @Author: Dan Neuman (@dan613)
-@Version: 1.0
-@Date: 20 Aug 2018
+@Version: 2.0
+@Date: 11 Sep 2018
 """
 
 from __future__ import unicode_literals
@@ -613,12 +639,10 @@ class GeoAxes(Axes):
 
         if not paths:
             paths = self._paths
-        z = 0.
         for path, f, e in zip(paths, faces, edges):
             sf = shapefile.Reader(path)
-            self.DrawShapes(sf, linewidth=lw, zorder=z,
+            self.DrawShapes(sf, linewidth=lw,
                             edgecolor=e, facecolor=f)
-            z += .1
 
 # %% Geodesic
 
@@ -869,6 +893,9 @@ class EqualEarthAxes(GeoAxes):
         return patch
 
     def _gen_axes_spines(self):
+        """
+        Generate the spine for the projection. This will be in data space.
+        """
         spine_type = 'circle'
         path = self._gen_axes_path()
         spine = mspines.Spine(self, spine_type, path)
