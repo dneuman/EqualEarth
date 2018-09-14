@@ -3,20 +3,8 @@
 """
 Equal Earth Projection
 ======================
-
-Based on code from:
-
-* https://matplotlib.org/gallery/misc/custom_projection.html
-
-and projection described by Bojan Šavrič (@BojanSavric), Tom Patterson and
-Bernhard Jenny:
-
-* https://doi.org/10.1080/13658816.2018.1504949
-* https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
-
-as well as code from @mbostock:
-
-* https://beta.observablehq.com/@mbostock/equal-earth-projection
+This is a :mod:`matplotlib` add-on that adds the Equal Earth Projection
+described by Bojan Šavrič (@BojanSavric), Tom Patterson and Bernhard Jenny:
 
 Abstract:
     "The Equal Earth map projection is a new equal-area pseudocylindrical
@@ -25,6 +13,20 @@ Abstract:
     of areas. The projection equations are simple to implement and fast to
     evaluate. Continental outlines are shown in a visually pleasing and
     balanced way."
+
+* https://doi.org/10.1080/13658816.2018.1504949
+* https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
+
+This projection is similar to the `Eckert IV equal area projection
+<https://en.wikipedia.org/wiki/Eckert_IV_projection>`_, but is 2-5x
+faster to calculate. It is based on code from:
+
+* https://matplotlib.org/gallery/misc/custom_projection.html
+
+as well as code from @mbostock:
+
+* https://beta.observablehq.com/@mbostock/equal-earth-projection
+
 
 Requirements
 ------------
@@ -43,7 +45,7 @@ Matplotlib so that it can be used when creating a subplot::
     >>>longs = [-200, 100, 100, -200]
     >>>lats = [40, 40, -40, 40]
     >>>fig = plt.figure('Equal Earth Projection')
-    >>>ax = fig.add_subplot(111, projection='equal_earth')
+    >>>ax = fig.add_subplot(111, projection='equal_earth', facecolor='lightblue')
     >>>ax.plot(longs, lats)
     >>>plt.grid(True)
     >>>plt.show()
@@ -58,34 +60,55 @@ All plots must be done in radians at this point.
 
 New in This Version (2.0)
 -------------------------
-DrawCoastlines:
+:func:`GeoAxes.DrawCoastlines`:
     World map data from `Natural Earth <https://www.naturalearthdata.com>`_
     will download into the ``maps`` folder in the same directory as the
-    Equal Earth module. This is 500kb on disk, but is downloaded in .zip format
-    and unzipped automatically. Other maps can be used if you supply the shape
-    files. Once the axes is set up, you can draw the continents::
+    Equal Earth module, the first time this function is called. This is 500kb
+    on disk, but is downloaded in .zip format and unzipped automatically. Other
+    maps can be used if you supply the shape files. Once the axes is set up,
+    you can draw the continents::
 
-        >>>ax.DrawCoastlines(facecolor='grey', edgecolor='none')
+        >>>ax.DrawCoastlines(facecolor='grey', edgecolor='k', lw=.5)
 
-Great Circle (geodesic) lines:
+:func:`GeoAxes.plot_geodesic` Great Circle (geodesic) lines:
     Navigation lines can be plotted using the shortest path on the globe. These
-    lines take plot keywords and wrap around if necessary.::
+    lines take plot keywords and wrap around if necessary::
 
         >>>pts = np.array([[-150, 45], [150, 45]])
         >>>ax.plot_geodesic(pts, 'b:', linewidth=1, alpha=.8)
 
-Plot Note
----------
+:func:`GeoAxes.DrawTissot`:
+    Draw the Tissot Indicatrix of Distortion on the projection. This is a set
+    of circles of equal size drawn on the projection, showing how the
+    projection distorts objects at various positions on the map::
+
+        >>>ax.DrawTissot(width=10.)
+
+    See `the Wikipedia article <https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix>`_
+    for more information.
+
+Note for ax.plot()
+------------------
 Lines drawn by `ax.plot()` method are clipped by the projection if any portions
 are outside it due to points being greater than +/- 180° in longitude. If you
 want to show lines wrapping around, they must be drawn twice. The second time
 will require the outside points put back into the correct range, but with their
 connecting points now outside the projection.
 
+Future
+------
+Ultimately, the Equal Earth projection should be added to the :mod:`cartopy`
+module, which provides a far greater range of features.
+
 
 @Author: Dan Neuman (@dan613)
+
 @Version: 2.0
-@Date: 11 Sep 2018
+
+@Date: 13 Sep 2018
+
+EqualEarth API
+==============
 """
 
 from __future__ import unicode_literals
@@ -121,7 +144,10 @@ rcParams = matplotlib.rcParams
 
 class GeoAxes(Axes):
     """
-    An abstract base class for geographic projections
+    An abstract base class for geographic projections. Most of these functions
+    are used only by :mod:`matplotlib`, however :func:`DrawCoastlines` and
+    :func:`plot_geodesic` are useful for drawing the continents and navigation
+    lines, respectively.
     """
     class ThetaFormatter(Formatter):
         """
@@ -581,7 +607,11 @@ class GeoAxes(Axes):
 
     def DrawShapes(self, sf, **kwargs):
         """
-        Draw shapes from the supplied shapefile
+        Draw shapes from the supplied shapefile. At the moment, only polygon
+        and polyline shapefiles are supported, which are sufficient for
+        drawing land-masses and coastlines. Coastlines are drawn separately
+        from land-masses since the land-mass may have slices to allow internal
+        bodies of water (e.g. Caspian Sea).
 
         Parameters
         ----------
@@ -618,7 +648,9 @@ class GeoAxes(Axes):
                        linewidth=.25, **kwargs):
         """
         Draw land masses, coastlines, and major lakes. Colors and linewidth
-        can be supplied.
+        can be supplied. Coastlines are drawn separately from land-masses
+        since the land-mass may have slices to allow internal bodies of water
+        (e.g. Caspian Sea).
 
         Parameters
         ----------
@@ -814,6 +846,16 @@ class GeoAxes(Axes):
         *args : values to pass to the ax.plot() function
             These are positional, specifically the color/style string
         **kwargs : keyword arguments to pass to the ax.plot() function
+
+        Examples
+        --------
+        Using two data styles::
+
+            >>>longs = np.array([-70, 100, 100, -70])
+            >>>lats = np.array([40, 40, -40, 40])
+            >>>pts = np.column_stack([longs, lats])  # combine in (4,2) array
+            >>>ax.plot_geodesic(longs, lats, 'b-', lw=1.)  # plot lines in blue
+            >>>ax.plot_geodesic(pts, 'ro', markersize=4)   # plot points in red
         """
         results = []
         if (len(args) == 0):
@@ -850,9 +892,34 @@ class GeoAxes(Axes):
 class EqualEarthAxes(GeoAxes):
     """
     A custom class for the Equal Earth projection, an equal-area map
-    projection.
+    projection, based on the GeoAxes base class.
 
     https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection
+
+    In general, you will not need to call any of these methods. Loading the
+    module will register the projection with `matplotlib` so that it may be
+    called using::
+
+        >>>import matplotlib.pyplot as plt
+        >>>import EqualEarth
+        >>>fig = plt.figure('Equal Earth Projection')
+        >>>ax = fig.add_subplot(111, projection='equal_earth')
+
+    There are useful functions from the base :class:`GeoAxes` class,
+    specifically:
+        * :func:`GeoAxes.DrawCoastlines`
+        * :func:`GeoAxes.plot_geodesic`, and
+        * :func:`GeoAxes.DrawTissot`
+
+    :func:`GeoAxes.DrawShapes` can also be useful to draw shapes if you
+    provide a shapefile::
+
+        >>>import shapefile
+        >>>sf = shapefile.Reader(path)
+        >>>ax.DrawShapes(sf, linewidth=.5, edgecolor='k', facecolor='g')
+
+    At the moment :func:`GeoAxes.DrawShapes` only works with lines and
+    polygon shapes.
     """
 
     # The projection must specify a name. This will be used by the
