@@ -106,6 +106,7 @@ docs/doctrees
 docs/source/index.rst
 docs/Makefile
 docs/source/conf.py
+!docs/build/
 !docs/build/html/
 
 # mypy
