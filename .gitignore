@@ -65,6 +65,11 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/source
+docs/doctrees
+docs/source/index.rst
+docs/Makefile
+docs/source/conf.py
 
 # PyBuilder
 target/
@@ -103,6 +108,3 @@ venv.bak/
 # mypy
 .mypy_cache/
 .DS_Store
-docs/source/index.rst
-docs/Makefile
-docs/source/conf.py
