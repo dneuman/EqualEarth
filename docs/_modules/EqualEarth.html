@@ -1,0 +1,1199 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>EqualEarth &#8212; Equal Earth 2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Equal Earth 2.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for EqualEarth</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Equal Earth Projection</span>
+<span class="sd">======================</span>
+<span class="sd">This is a :mod:`matplotlib` add-on that adds the Equal Earth Projection</span>
+<span class="sd">described by Bojan Šavrič (@BojanSavric), Tom Patterson and Bernhard Jenny:</span>
+
+<span class="sd">Abstract:</span>
+<span class="sd">    &quot;The Equal Earth map projection is a new equal-area pseudocylindrical</span>
+<span class="sd">    projection for world maps. It is inspired by the widely used Robinson</span>
+<span class="sd">    projection, but unlike the Robinson projection, retains the relative size</span>
+<span class="sd">    of areas. The projection equations are simple to implement and fast to</span>
+<span class="sd">    evaluate. Continental outlines are shown in a visually pleasing and</span>
+<span class="sd">    balanced way.&quot;</span>
+
+<span class="sd">* https://doi.org/10.1080/13658816.2018.1504949</span>
+<span class="sd">* https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection</span>
+
+<span class="sd">This projection is similar to the `Eckert IV equal area projection</span>
+<span class="sd">&lt;https://en.wikipedia.org/wiki/Eckert_IV_projection&gt;`_, but is 2-5x</span>
+<span class="sd">faster to calculate. It is based on code from:</span>
+
+<span class="sd">* https://matplotlib.org/gallery/misc/custom_projection.html</span>
+
+<span class="sd">as well as code from @mbostock:</span>
+
+<span class="sd">* https://beta.observablehq.com/@mbostock/equal-earth-projection</span>
+
+
+<span class="sd">Requirements</span>
+<span class="sd">------------</span>
+<span class="sd">shapefile (from pyshp) is required to read the map data. This is available</span>
+<span class="sd">from Anaconda, but must be installed first, from the command line::</span>
+
+<span class="sd">    &gt;&gt;&gt;conda install shapefile</span>
+
+<span class="sd">Usage</span>
+<span class="sd">-----</span>
+<span class="sd">Importing the module causes the Equal Earth projection to be registered with</span>
+<span class="sd">Matplotlib so that it can be used when creating a subplot::</span>
+
+<span class="sd">    &gt;&gt;&gt;import matplotlib.pyplot as plt</span>
+<span class="sd">    &gt;&gt;&gt;import EqualEarth</span>
+<span class="sd">    &gt;&gt;&gt;longs = [-200, 100, 100, -200]</span>
+<span class="sd">    &gt;&gt;&gt;lats = [40, 40, -40, 40]</span>
+<span class="sd">    &gt;&gt;&gt;fig = plt.figure(&#39;Equal Earth Projection&#39;)</span>
+<span class="sd">    &gt;&gt;&gt;ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;, facecolor=&#39;lightblue&#39;)</span>
+<span class="sd">    &gt;&gt;&gt;ax.plot(longs, lats)</span>
+<span class="sd">    &gt;&gt;&gt;plt.grid(True)</span>
+<span class="sd">    &gt;&gt;&gt;plt.show()</span>
+
+<span class="sd">Note that the default behaviour is to take all data in degrees. If radians</span>
+<span class="sd">are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,</span>
+<span class="sd">ie::</span>
+
+<span class="sd">    &gt;&gt;&gt;ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;, rad=True)</span>
+
+<span class="sd">All plots must be done in radians at this point.</span>
+
+<span class="sd">New in This Version (2.0)</span>
+<span class="sd">-------------------------</span>
+<span class="sd">:func:`GeoAxes.DrawCoastlines`:</span>
+<span class="sd">    World map data from `Natural Earth &lt;https://www.naturalearthdata.com&gt;`_</span>
+<span class="sd">    will download into the ``maps`` folder in the same directory as the</span>
+<span class="sd">    Equal Earth module, the first time this function is called. This is 500kb</span>
+<span class="sd">    on disk, but is downloaded in .zip format and unzipped automatically. Other</span>
+<span class="sd">    maps can be used if you supply the shape files. Once the axes is set up,</span>
+<span class="sd">    you can draw the continents::</span>
+
+<span class="sd">        &gt;&gt;&gt;ax.DrawCoastlines(facecolor=&#39;grey&#39;, edgecolor=&#39;k&#39;, lw=.5)</span>
+
+<span class="sd">:func:`GeoAxes.plot_geodesic` Great Circle (geodesic) lines:</span>
+<span class="sd">    Navigation lines can be plotted using the shortest path on the globe. These</span>
+<span class="sd">    lines take plot keywords and wrap around if necessary::</span>
+
+<span class="sd">        &gt;&gt;&gt;pts = np.array([[-150, 45], [150, 45]])</span>
+<span class="sd">        &gt;&gt;&gt;ax.plot_geodesic(pts, &#39;b:&#39;, linewidth=1, alpha=.8)</span>
+
+<span class="sd">:func:`GeoAxes.DrawTissot`:</span>
+<span class="sd">    Draw the Tissot Indicatrix of Distortion on the projection. This is a set</span>
+<span class="sd">    of circles of equal size drawn on the projection, showing how the</span>
+<span class="sd">    projection distorts objects at various positions on the map::</span>
+
+<span class="sd">        &gt;&gt;&gt;ax.DrawTissot(width=10.)</span>
+
+<span class="sd">    See `the Wikipedia article &lt;https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix&gt;`_</span>
+<span class="sd">    for more information.</span>
+
+<span class="sd">Note for ax.plot()</span>
+<span class="sd">------------------</span>
+<span class="sd">Lines drawn by `ax.plot()` method are clipped by the projection if any portions</span>
+<span class="sd">are outside it due to points being greater than +/- 180° in longitude. If you</span>
+<span class="sd">want to show lines wrapping around, they must be drawn twice. The second time</span>
+<span class="sd">will require the outside points put back into the correct range, but with their</span>
+<span class="sd">connecting points now outside the projection.</span>
+
+<span class="sd">Future</span>
+<span class="sd">------</span>
+<span class="sd">Ultimately, the Equal Earth projection should be added to the :mod:`cartopy`</span>
+<span class="sd">module, which provides a far greater range of features.</span>
+
+
+<span class="sd">@Author: Dan Neuman (@dan613)</span>
+
+<span class="sd">@Version: 2.0</span>
+
+<span class="sd">@Date: 13 Sep 2018</span>
+
+<span class="sd">EqualEarth API</span>
+<span class="sd">==============</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.axes</span> <span class="k">import</span> <span class="n">Axes</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Circle</span>
+<span class="kn">from</span> <span class="nn">matplotlib.path</span> <span class="k">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
+<span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="k">import</span> <span class="n">NullLocator</span><span class="p">,</span> <span class="n">Formatter</span><span class="p">,</span> <span class="n">FixedLocator</span>
+<span class="kn">from</span> <span class="nn">matplotlib.transforms</span> <span class="k">import</span> <span class="n">Affine2D</span><span class="p">,</span> <span class="n">BboxTransformTo</span><span class="p">,</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">matplotlib.projections</span> <span class="k">import</span> <span class="n">register_projection</span>
+<span class="kn">import</span> <span class="nn">matplotlib.spines</span> <span class="k">as</span> <span class="nn">mspines</span>
+<span class="kn">import</span> <span class="nn">matplotlib.axis</span> <span class="k">as</span> <span class="nn">maxis</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># Mapping support</span>
+<span class="kn">from</span> <span class="nn">zipfile</span> <span class="k">import</span> <span class="n">ZipFile</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">from</span> <span class="nn">urllib.request</span> <span class="k">import</span> <span class="n">urlopen</span>
+<span class="kn">import</span> <span class="nn">shapefile</span>  <span class="c1"># available via:  conda install shapefile</span>
+
+<span class="n">rcParams</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">rcParams</span>
+
+<span class="c1"># This example projection class is rather long, but it is designed to</span>
+<span class="c1"># illustrate many features, not all of which will be used every time.</span>
+<span class="c1"># It is also common to factor out a lot of these methods into common</span>
+<span class="c1"># code used by a number of projections with similar characteristics</span>
+<span class="c1"># (see geo.py).</span>
+
+
+<div class="viewcode-block" id="GeoAxes"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes">[docs]</a><span class="k">class</span> <span class="nc">GeoAxes</span><span class="p">(</span><span class="n">Axes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An abstract base class for geographic projections. Most of these functions</span>
+<span class="sd">    are used only by :mod:`matplotlib`, however :func:`DrawCoastlines` and</span>
+<span class="sd">    :func:`plot_geodesic` are useful for drawing the continents and navigation</span>
+<span class="sd">    lines, respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="GeoAxes.ThetaFormatter"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.ThetaFormatter">[docs]</a>    <span class="k">class</span> <span class="nc">ThetaFormatter</span><span class="p">(</span><span class="n">Formatter</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Used to format the theta tick labels.  Converts the native</span>
+<span class="sd">        unit of radians into degrees and adds a degree symbol.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">round_to</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_round_to</span> <span class="o">=</span> <span class="n">round_to</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span> <span class="o">=</span> <span class="n">rad</span>
+
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">degrees</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_round_to</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_round_to</span>
+            <span class="k">if</span> <span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;text.usetex&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;text.latex.unicode&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="sa">r</span><span class="s2">&quot;$</span><span class="si">%0.0f</span><span class="s2">^\circ$&quot;</span> <span class="o">%</span> <span class="n">degrees</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%0.0f</span><span class="se">\N{DEGREE SIGN}</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">degrees</span></div>
+
+    <span class="n">RESOLUTION</span> <span class="o">=</span> <span class="mi">75</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span> <span class="o">=</span> <span class="n">rad</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">0.5</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span> <span class="o">=</span> <span class="mf">90.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_init_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xaxis</span> <span class="o">=</span> <span class="n">maxis</span><span class="o">.</span><span class="n">XAxis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span> <span class="o">=</span> <span class="n">maxis</span><span class="o">.</span><span class="n">YAxis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># Do not register xaxis or yaxis with spines -- as done in</span>
+        <span class="c1"># Axes._init_axis() -- until GeoAxes.xaxis.cla() works.</span>
+        <span class="c1"># self.spines[&#39;geo&#39;].register_axis(self.yaxis)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_transScale</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GeoAxes.cla"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.cla">[docs]</a>    <span class="k">def</span> <span class="nf">cla</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">Axes</span><span class="o">.</span><span class="n">cla</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_longitude_grid</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_latitude_grid</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_longitude_grid_ends</span><span class="p">(</span><span class="mi">75</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">NullLocator</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">NullLocator</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticks_position</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks_position</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_tick_params</span><span class="p">(</span><span class="n">label1On</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Why do we need to turn on yaxis tick labels, but</span>
+        <span class="c1"># xaxis tick labels are already on?</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.grid&#39;</span><span class="p">])</span>
+
+        <span class="n">lim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="n">Axes</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="mf">2.</span><span class="p">)</span>
+        <span class="n">Axes</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">-</span><span class="n">lim</span><span class="p">,</span> <span class="n">lim</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_set_lim_and_transforms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># A (possibly non-linear) projection on the (already scaled) data</span>
+
+        <span class="c1"># There are three important coordinate spaces going on here:</span>
+        <span class="c1">#</span>
+        <span class="c1">#    1. Data space: The space of the data itself</span>
+        <span class="c1">#</span>
+        <span class="c1">#    2. Axes space: The unit rectangle (0, 0) to (1, 1)</span>
+        <span class="c1">#       covering the entire plot area.</span>
+        <span class="c1">#</span>
+        <span class="c1">#    3. Display space: The coordinates of the resulting image,</span>
+        <span class="c1">#       often in pixels or dpi/inch.</span>
+
+        <span class="c1"># This function makes heavy use of the Transform classes in</span>
+        <span class="c1"># ``lib/matplotlib/transforms.py.`` For more information, see</span>
+        <span class="c1"># the inline documentation there.</span>
+
+        <span class="c1"># The goal of the first two transformations is to get from the</span>
+        <span class="c1"># data space (in this case longitude and latitude) to axes</span>
+        <span class="c1"># space.  It is separated into a non-affine and affine part so</span>
+        <span class="c1"># that the non-affine part does not have to be recomputed when</span>
+        <span class="c1"># a simple affine change to the figure has been made (such as</span>
+        <span class="c1"># resizing the window or changing the dpi).</span>
+
+        <span class="c1"># 1) The core transformation from data space into</span>
+        <span class="c1"># rectilinear space defined in the EqualEarthTransform class.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transProjection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_core_transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">RESOLUTION</span><span class="p">)</span>
+
+        <span class="c1"># 2) The above has an output range that is not in the unit</span>
+        <span class="c1"># rectangle, so scale and translate it so it fits correctly</span>
+        <span class="c1"># within the axes.  The peculiar calculations of xscale and</span>
+        <span class="c1"># yscale are specific to an Equal Earth projection, so don&#39;t</span>
+        <span class="c1"># worry about them too much.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transAffine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_affine_transform</span><span class="p">()</span>
+
+        <span class="c1"># 3) This is the transformation from axes space to display</span>
+        <span class="c1"># space.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transAxes</span> <span class="o">=</span> <span class="n">BboxTransformTo</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bbox</span><span class="p">)</span>
+
+        <span class="c1"># Now put these 3 transforms together -- from data all the way</span>
+        <span class="c1"># to display coordinates.  Using the &#39;+&#39; operator, these</span>
+        <span class="c1"># transforms will be applied &quot;in order&quot;.  The transforms are</span>
+        <span class="c1"># automatically simplified, if possible, by the underlying</span>
+        <span class="c1"># transformation framework.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transData</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transProjection</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transAffine</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transAxes</span>
+
+        <span class="c1"># The main data transformation is set up.  Now deal with</span>
+        <span class="c1"># gridlines and tick labels.</span>
+
+        <span class="c1"># Longitude gridlines and ticklabels.  The input to these</span>
+        <span class="c1"># transforms are in display space in x and axes space in y.</span>
+        <span class="c1"># Therefore, the input values will be in range (-xmin, 0),</span>
+        <span class="c1"># (xmax, 1).  The goal of these transforms is to go from that</span>
+        <span class="c1"># space to display space.  The tick labels will be offset 4</span>
+        <span class="c1"># pixels from the equator.</span>
+        <span class="n">lim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span> <span class="c1"># (pi/2 or 90°)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_pretransform</span> <span class="o">=</span> \
+            <span class="n">Affine2D</span><span class="p">()</span> \
+            <span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="mf">2.0</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">lim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_transform</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_pretransform</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transData</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_text1_transform</span> <span class="o">=</span> \
+            <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transData</span> <span class="o">+</span> \
+            <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_text2_transform</span> <span class="o">=</span> \
+            <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transData</span> <span class="o">+</span> \
+            <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.0</span><span class="p">)</span>
+
+        <span class="c1"># Now set up the transforms for the latitude ticks.  The input to</span>
+        <span class="c1"># these transforms are in axes space in x and display space in</span>
+        <span class="c1"># y.  Therefore, the input values will be in range (0, -ymin),</span>
+        <span class="c1"># (1, ymax).  The goal of these transforms is to go from that</span>
+        <span class="c1"># space to display space.  The tick labels will be offset 4</span>
+        <span class="c1"># pixels from the edge of the axes ellipse.</span>
+        <span class="n">yaxis_stretch</span> <span class="o">=</span> <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">lim</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">yaxis_space</span> <span class="o">=</span> <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_yaxis_transform</span> <span class="o">=</span> \
+            <span class="n">yaxis_stretch</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transData</span>
+        <span class="n">yaxis_text_base</span> <span class="o">=</span> \
+            <span class="n">yaxis_stretch</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transProjection</span> <span class="o">+</span> \
+            <span class="p">(</span><span class="n">yaxis_space</span> <span class="o">+</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">transAffine</span> <span class="o">+</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_yaxis_text1_transform</span> <span class="o">=</span> \
+            <span class="n">yaxis_text_base</span> <span class="o">+</span> \
+            <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">-</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_yaxis_text2_transform</span> <span class="o">=</span> \
+            <span class="n">yaxis_text_base</span> <span class="o">+</span> \
+            <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_affine_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">lim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_core_transform</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">xscale</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">transform_point</span><span class="p">((</span><span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">yscale</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">transform_point</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">lim</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Affine2D</span><span class="p">()</span> \
+            <span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">/</span> <span class="n">xscale</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">/</span> <span class="n">yscale</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GeoAxes.get_xaxis_transform"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_xaxis_transform">[docs]</a>    <span class="k">def</span> <span class="nf">get_xaxis_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;grid&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to provide a transformation for the</span>
+<span class="sd">        x-axis tick labels.</span>
+
+<span class="sd">        Returns a tuple of the form (transform, valign, halign)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;tick1&#39;</span><span class="p">,</span> <span class="s1">&#39;tick2&#39;</span><span class="p">,</span> <span class="s1">&#39;grid&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;which&#39; must be one of &#39;tick1&#39;, &#39;tick2&#39;, or &#39;grid&#39;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_transform</span></div>
+
+<div class="viewcode-block" id="GeoAxes.get_xaxis_text1_transform"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_xaxis_text1_transform">[docs]</a>    <span class="k">def</span> <span class="nf">get_xaxis_text1_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_text1_transform</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span></div>
+
+<div class="viewcode-block" id="GeoAxes.get_xaxis_text2_transform"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_xaxis_text2_transform">[docs]</a>    <span class="k">def</span> <span class="nf">get_xaxis_text2_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to provide a transformation for the</span>
+<span class="sd">        secondary x-axis tick labels.</span>
+
+<span class="sd">        Returns a tuple of the form (transform, valign, halign)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_text2_transform</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span></div>
+
+<div class="viewcode-block" id="GeoAxes.get_yaxis_transform"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_yaxis_transform">[docs]</a>    <span class="k">def</span> <span class="nf">get_yaxis_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;grid&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to provide a transformation for the</span>
+<span class="sd">        y-axis grid and ticks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;tick1&#39;</span><span class="p">,</span> <span class="s1">&#39;tick2&#39;</span><span class="p">,</span> <span class="s1">&#39;grid&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;which&#39; must be one of &#39;tick1&#39;, &#39;tick2&#39;, or &#39;grid&#39;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_yaxis_transform</span></div>
+
+<div class="viewcode-block" id="GeoAxes.get_yaxis_text1_transform"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_yaxis_text1_transform">[docs]</a>    <span class="k">def</span> <span class="nf">get_yaxis_text1_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to provide a transformation for the</span>
+<span class="sd">        y-axis tick labels.</span>
+
+<span class="sd">        Returns a tuple of the form (transform, valign, halign)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_yaxis_text1_transform</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span></div>
+
+<div class="viewcode-block" id="GeoAxes.get_yaxis_text2_transform"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_yaxis_text2_transform">[docs]</a>    <span class="k">def</span> <span class="nf">get_yaxis_text2_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to provide a transformation for the</span>
+<span class="sd">        secondary y-axis tick labels.</span>
+
+<span class="sd">        Returns a tuple of the form (transform, valign, halign)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_yaxis_text2_transform</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="s1">&#39;left&#39;</span></div>
+
+    <span class="k">def</span> <span class="nf">_gen_axes_patch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to define the shape that is used for the</span>
+<span class="sd">        background of the plot.  It should be a subclass of Patch.</span>
+
+<span class="sd">        In this case, it is a Circle (that may be warped by the axes</span>
+<span class="sd">        transform into an ellipse).  Any data and gridlines will be</span>
+<span class="sd">        clipped to this shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Circle</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_gen_axes_spines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;geo&#39;</span><span class="p">:</span> <span class="n">mspines</span><span class="o">.</span><span class="n">Spine</span><span class="o">.</span><span class="n">circular_spine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)}</span>
+
+<div class="viewcode-block" id="GeoAxes.set_yscale"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.set_yscale">[docs]</a>    <span class="k">def</span> <span class="nf">set_yscale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;linear&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+    <span class="c1"># Prevent the user from applying scales to one or both of the</span>
+    <span class="c1"># axes.  In this particular case, scaling the axes wouldn&#39;t make</span>
+    <span class="c1"># sense, so we don&#39;t allow it.</span>
+    <span class="n">set_xscale</span> <span class="o">=</span> <span class="n">set_yscale</span>
+
+    <span class="c1"># Prevent the user from changing the axes limits.  In our case, we</span>
+    <span class="c1"># want to display the whole sphere all the time, so we override</span>
+    <span class="c1"># set_xlim and set_ylim to ignore any input.  This also applies to</span>
+    <span class="c1"># interactive panning and zooming in the GUI interfaces.</span>
+<div class="viewcode-block" id="GeoAxes.set_xlim"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.set_xlim">[docs]</a>    <span class="k">def</span> <span class="nf">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;It is not possible to change axes limits &quot;</span>
+                        <span class="s2">&quot;for geographic projections. Please consider &quot;</span>
+                        <span class="s2">&quot;using Basemap or Cartopy.&quot;</span><span class="p">)</span></div>
+
+    <span class="n">set_ylim</span> <span class="o">=</span> <span class="n">set_xlim</span>
+
+<div class="viewcode-block" id="GeoAxes.format_coord"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.format_coord">[docs]</a>    <span class="k">def</span> <span class="nf">format_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to change how the values are displayed in</span>
+<span class="sd">        the status bar.</span>
+
+<span class="sd">        In this case, we want them to be displayed in degrees N/S/E/W.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">([</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">lat</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">ns</span> <span class="o">=</span> <span class="s1">&#39;N&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ns</span> <span class="o">=</span> <span class="s1">&#39;S&#39;</span>
+        <span class="k">if</span> <span class="n">lon</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">ew</span> <span class="o">=</span> <span class="s1">&#39;E&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ew</span> <span class="o">=</span> <span class="s1">&#39;W&#39;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%f</span><span class="se">\N{DEGREE SIGN}</span><span class="si">%s</span><span class="s1">, </span><span class="si">%f</span><span class="se">\N{DEGREE SIGN}</span><span class="si">%s</span><span class="s1">&#39;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">ns</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="n">ew</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="GeoAxes.set_longitude_grid"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.set_longitude_grid">[docs]</a>    <span class="k">def</span> <span class="nf">set_longitude_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the number of degrees between each longitude grid.</span>
+
+<span class="sd">        This is an example method that is specific to this projection</span>
+<span class="sd">        class -- it provides a more convenient interface to set the</span>
+<span class="sd">        ticking than set_xticks would.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Skip -180 and 180, which are the fixed limits.</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span> <span class="o">+</span> <span class="n">degrees</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="n">degrees</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">FixedLocator</span><span class="p">(</span><span class="n">grid</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ThetaFormatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">,</span> <span class="n">degrees</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="GeoAxes.set_latitude_grid"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.set_latitude_grid">[docs]</a>    <span class="k">def</span> <span class="nf">set_latitude_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the number of degrees between each longitude grid.</span>
+
+<span class="sd">        This is an example method that is specific to this projection</span>
+<span class="sd">        class -- it provides a more convenient interface than</span>
+<span class="sd">        set_yticks would.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Skip -90 and 90, which are the fixed limits.</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span> <span class="o">+</span> <span class="n">degrees</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">degrees</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">FixedLocator</span><span class="p">(</span><span class="n">grid</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ThetaFormatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">,</span> <span class="n">degrees</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="GeoAxes.set_longitude_grid_ends"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.set_longitude_grid_ends">[docs]</a>    <span class="k">def</span> <span class="nf">set_longitude_grid_ends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the latitude(s) at which to stop drawing the longitude grids.</span>
+
+<span class="sd">        Often, in geographic projections, you wouldn&#39;t want to draw</span>
+<span class="sd">        longitude gridlines near the poles.  This allows the user to</span>
+<span class="sd">        specify the degree at which to stop drawing longitude grids.</span>
+
+<span class="sd">        This is an example method that is specific to this projection</span>
+<span class="sd">        class -- it provides an interface to something that has no</span>
+<span class="sd">        analogy in the base Axes class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_longitude_cap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">degrees</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_longitude_cap</span> <span class="o">=</span> <span class="n">degrees</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xaxis_pretransform</span> \
+            <span class="o">.</span><span class="n">clear</span><span class="p">()</span> \
+            <span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_longitude_cap</span> <span class="o">*</span> <span class="mf">2.0</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_longitude_cap</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GeoAxes.get_data_ratio"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.get_data_ratio">[docs]</a>    <span class="k">def</span> <span class="nf">get_data_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the aspect ratio of the data itself.</span>
+
+<span class="sd">        This method should be overridden by any Axes that have a</span>
+<span class="sd">        fixed data ratio.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span></div>
+
+    <span class="c1"># Interactive panning and zooming is not supported with this projection,</span>
+    <span class="c1"># so we override all of the following methods to disable it.</span>
+<div class="viewcode-block" id="GeoAxes.can_zoom"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.can_zoom">[docs]</a>    <span class="k">def</span> <span class="nf">can_zoom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return *True* if this axes supports the zoom box button functionality.</span>
+<span class="sd">        This axes object does not support interactive zoom box.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="GeoAxes.can_pan"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.can_pan">[docs]</a>    <span class="k">def</span> <span class="nf">can_pan</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return *True* if this axes supports the pan/zoom button functionality.</span>
+<span class="sd">        This axes object does not support interactive pan/zoom.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="GeoAxes.start_pan"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.start_pan">[docs]</a>    <span class="k">def</span> <span class="nf">start_pan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="GeoAxes.end_pan"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.end_pan">[docs]</a>    <span class="k">def</span> <span class="nf">end_pan</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="GeoAxes.drag_pan"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.drag_pan">[docs]</a>    <span class="k">def</span> <span class="nf">drag_pan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<span class="c1">#=====================================================</span>
+<span class="c1">#       Mapping Functions</span>
+<span class="c1">#=====================================================</span>
+<span class="c1"># iPython label</span>
+<span class="c1"># %% Mapping</span>
+
+<span class="c1"># These mapping functions will work with any projection based on GeoAxes</span>
+
+    <span class="n">_paths</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;maps/ne_110m_land/ne_110m_land&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;maps/ne_110m_coastline/ne_110m_coastline&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;maps/ne_110m_lakes/ne_110m_lakes&#39;</span><span class="p">]</span>
+    <span class="n">_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;land&#39;</span><span class="p">,</span> <span class="s1">&#39;coastline&#39;</span><span class="p">,</span> <span class="s1">&#39;lakes&#39;</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">_CheckMaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check_only</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check to see if the maps already exist, otherwise download them from</span>
+<span class="sd">        Natural Earth&#39;s content delivery network. It will be downloaded into the</span>
+<span class="sd">        same directory as the EqualEarth module, in the &#39;maps&#39; subdirectory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url_template</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;http://naciscdn.org/naturalearth/110m&#39;</span>
+                        <span class="s1">&#39;/physical/ne_110m_</span><span class="si">{name}</span><span class="s1">.zip&#39;</span><span class="p">)</span>
+        <span class="n">path_template</span> <span class="o">=</span> <span class="s1">&#39;ne_110m_</span><span class="si">{name}</span><span class="s1">&#39;</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+        <span class="n">pdir</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parent</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">pdir</span><span class="p">)</span>
+        <span class="n">mdir</span> <span class="o">=</span> <span class="n">pdir</span> <span class="o">/</span> <span class="s1">&#39;maps&#39;</span>  <span class="c1"># module maps directory</span>
+        <span class="k">if</span> <span class="n">mdir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span> <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">check_only</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Now get the zip files</span>
+        <span class="n">mdir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">url_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">mapdir</span> <span class="o">=</span> <span class="n">mdir</span> <span class="o">/</span> <span class="n">path_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">mapdir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ne_file</span> <span class="o">=</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="n">zfile</span> <span class="o">=</span> <span class="n">ZipFile</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">ne_file</span><span class="o">.</span><span class="n">read</span><span class="p">()),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+                <span class="n">zfile</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">mapdir</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">zfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_DrawEllipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ll</span><span class="p">,</span> <span class="n">width_deg</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw an ellipse. Technically, a circle is drawn (an</span>
+<span class="sd">        ellipse with equal height and width), but this usually becomes</span>
+<span class="sd">        an ellipse on the projection axes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ll : tuple of floats</span>
+<span class="sd">            longitude and latitude coordinates (in degrees) to draw the ellipse</span>
+<span class="sd">        width_deg : float</span>
+<span class="sd">            Width of ellipse in degrees</span>
+<span class="sd">        resolution : int, optional, default: 50</span>
+<span class="sd">            number of points to use in drawing the ellipse</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># expect ll in degrees, so must</span>
+        <span class="c1"># change ll to radians if that is the base unit</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span>
+        <span class="n">long</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">ll</span>
+        <span class="c1"># Width as longitude range gets smaller as you go to the poles, so this</span>
+        <span class="c1"># must be adjusted by the cosine of the latitude.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">width_deg</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>  <span class="c1"># use as radius, not diameter</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="n">height</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="n">width_deg</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="n">height</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span>
+        <span class="c1"># Use a path instead of the regular Ellipse patch to improve resolution</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">]]</span>  <span class="c1"># append starting point to close path</span>
+        <span class="n">longs</span> <span class="o">=</span> <span class="n">width</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="n">long</span>
+        <span class="n">lats</span> <span class="o">=</span> <span class="n">height</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="n">lat</span>
+        <span class="n">verts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">longs</span><span class="p">,</span> <span class="n">lats</span><span class="p">])</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span>
+                                <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">4</span><span class="p">,</span>
+                                <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mf">5.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GeoAxes.DrawTissot"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.DrawTissot">[docs]</a>    <span class="k">def</span> <span class="nf">DrawTissot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw Tissot Indicatrices of Deformation over the map projection to show</span>
+<span class="sd">        how the projection deforms equally-sized circles at various points</span>
+<span class="sd">        on the map.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        width : float, optional, default: 5.</span>
+<span class="sd">            width of circles in degrees of latitude</span>
+<span class="sd">        resolution : int, optional, default: 50</span>
+<span class="sd">            Number of points in circle</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">degrees</span> <span class="o">=</span> <span class="mi">30</span>
+        <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="n">degrees</span><span class="p">,</span> <span class="n">degrees</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">long</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_DrawEllipse</span><span class="p">([</span><span class="n">long</span><span class="p">,</span> <span class="n">lat</span><span class="p">],</span> <span class="n">width</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">long</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">degrees</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_DrawEllipse</span><span class="p">([</span><span class="n">long</span><span class="p">,</span> <span class="n">lat</span><span class="p">],</span> <span class="n">width</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_DrawEllipse</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">lat</span><span class="p">],</span> <span class="n">width</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GeoAxes.DrawShapes"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.DrawShapes">[docs]</a>    <span class="k">def</span> <span class="nf">DrawShapes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw shapes from the supplied shapefile. At the moment, only polygon</span>
+<span class="sd">        and polyline shapefiles are supported, which are sufficient for</span>
+<span class="sd">        drawing land-masses and coastlines. Coastlines are drawn separately</span>
+<span class="sd">        from land-masses since the land-mass may have slices to allow internal</span>
+<span class="sd">        bodies of water (e.g. Caspian Sea).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sf : shapefile.Reader object</span>
+<span class="sd">            The shapefile containing the shapes to draw</span>
+<span class="sd">        kwargs : optional</span>
+<span class="sd">            Keyword arguments to send to the patch object. This will generally</span>
+<span class="sd">            be edge and face colors, line widths, alpha, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Map points are in degrees, so must be converted if underlying</span>
+        <span class="c1"># projection is in radians. Use a null function that does nothing</span>
+        <span class="c1"># if the projection is in degrees.</span>
+        <span class="k">def</span> <span class="nf">null_convert</span><span class="p">(</span><span class="n">vals</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">vals</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="n">null_convert</span>
+
+        <span class="k">if</span> <span class="n">sf</span><span class="o">.</span><span class="n">shapeType</span> <span class="o">==</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">POLYGON</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">sf</span><span class="o">.</span><span class="n">shapes</span><span class="p">():</span>
+                <span class="n">verts</span> <span class="o">=</span> <span class="n">convert</span><span class="p">(</span><span class="n">shape</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+                <span class="n">patch</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sf</span><span class="o">.</span><span class="n">shapeType</span> <span class="o">==</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">POLYLINE</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">sf</span><span class="o">.</span><span class="n">shapes</span><span class="p">():</span>
+                <span class="n">verts</span> <span class="o">=</span> <span class="n">convert</span><span class="p">(</span><span class="n">shape</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">mlines</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span>
+                <span class="n">patch</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">PathPatch</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GeoAxes.DrawCoastlines"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.DrawCoastlines">[docs]</a>    <span class="k">def</span> <span class="nf">DrawCoastlines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#FEFEE6&#39;</span><span class="p">,</span>
+                       <span class="n">linewidth</span><span class="o">=.</span><span class="mi">25</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw land masses, coastlines, and major lakes. Colors and linewidth</span>
+<span class="sd">        can be supplied. Coastlines are drawn separately from land-masses</span>
+<span class="sd">        since the land-mass may have slices to allow internal bodies of water</span>
+<span class="sd">        (e.g. Caspian Sea).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        paths : list of str, optional, default: None</span>
+<span class="sd">            List of paths to map data, if they aren&#39;t in the default location. The</span>
+<span class="sd">            paths may be fully-specified or relative, and must be in order:</span>
+<span class="sd">                [&#39;land path&#39;, &#39;coastline path&#39;, &#39;lake path&#39;]</span>
+<span class="sd">        edgecolor, ec : color, optional, default: black</span>
+<span class="sd">            Color for coastlines and lake edges. ``ec`` can be used as a shortcut.</span>
+<span class="sd">        facecolor, fc : color, optional, default: yellow</span>
+<span class="sd">            Color for land. ``fc`` can be used as a shortcut.</span>
+<span class="sd">        linewidth, lw : float, optional, default: .25</span>
+<span class="sd">            Line width of coastlines and lake edges.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set up colors, overriding defaults if shortcuts given</span>
+        <span class="n">bc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_facecolor</span><span class="p">()</span>         <span class="c1"># background color</span>
+        <span class="n">ec</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ec&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">)</span>  <span class="c1"># edge color</span>
+        <span class="n">fc</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fc&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">)</span>  <span class="c1"># face color</span>
+        <span class="n">lw</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lw&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">)</span>  <span class="c1"># line width</span>
+
+        <span class="c1">#        land   coast   lakes</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">ec</span><span class="p">,</span>    <span class="n">ec</span><span class="p">]</span>
+        <span class="n">faces</span> <span class="o">=</span> <span class="p">[</span><span class="n">fc</span><span class="p">,</span>    <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">bc</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_paths</span>
+        <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">faces</span><span class="p">,</span> <span class="n">edges</span><span class="p">):</span>
+            <span class="n">sf</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DrawShapes</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">lw</span><span class="p">,</span>
+                            <span class="n">edgecolor</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">f</span><span class="p">)</span></div>
+
+<span class="c1"># %% Geodesic</span>
+
+<div class="viewcode-block" id="GeoAxes.Get_geodesic_heading_distance"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.Get_geodesic_heading_distance">[docs]</a>    <span class="k">def</span> <span class="nf">Get_geodesic_heading_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ll1</span><span class="p">,</span> <span class="n">ll2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the heading and angular distance between two points. Angular</span>
+<span class="sd">        distance is the angle between two points with Earth centre. To get actual</span>
+<span class="sd">        distance, multiply the angle (in radians) by Earth radius. Heading is the</span>
+<span class="sd">        angle between the path and true North.</span>
+
+<span class="sd">        Math is found at http://en.wikipedia.org/wiki/Great-circle_navigation</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ll1, ll2 : tuples of 2 floats</span>
+<span class="sd">            start and end points as (longitude, latitude) tuples or lists</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Notation: *0 refers to node 0 where great circle intersects equator</span>
+        <span class="c1">#           *1 refers to first point</span>
+        <span class="c1">#           *01 refers to angle between node 0 and point 1</span>
+
+        <span class="c1"># Heading is the angle between the path and true North.</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="n">ll1</span><span class="p">,</span> <span class="n">ll2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">ll1</span><span class="p">,</span> <span class="n">ll2</span><span class="p">))</span>
+        <span class="c1"># simplify math notation</span>
+        <span class="n">cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span>
+        <span class="n">sin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span>
+        <span class="n">atan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span>  <span class="c1"># handles quadrants better than np.arctan</span>
+        <span class="c1"># unpack longitudes and latitudes</span>
+        <span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span> <span class="o">=</span> <span class="n">ll1</span>
+        <span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span> <span class="o">=</span> <span class="n">ll2</span>
+        <span class="n">lon12</span> <span class="o">=</span> <span class="n">lon2</span> <span class="o">-</span> <span class="n">lon1</span>  <span class="c1"># longitudinal angle between the two points</span>
+        <span class="k">if</span> <span class="n">lon12</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>
+            <span class="n">lon12</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span>
+        <span class="k">elif</span> <span class="n">lon12</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>
+            <span class="n">lon12</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span>
+
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">lon12</span><span class="p">)</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="p">(</span><span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">lat2</span><span class="p">))</span> <span class="o">-</span> <span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">lon12</span><span class="p">))</span>
+        <span class="n">h1</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">x1</span><span class="p">)</span>  <span class="c1"># heading of path</span>
+
+        <span class="n">y12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">-</span> <span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">lon12</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
+                      <span class="p">(</span><span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">lon12</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">x12</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">+</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">lon12</span><span class="p">)</span>
+        <span class="n">d12</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">y12</span><span class="p">,</span> <span class="n">x12</span><span class="p">)</span>  <span class="c1"># angular distance in radians</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="n">ll1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">ll1</span><span class="p">)</span>
+            <span class="n">h1</span><span class="p">,</span> <span class="n">d12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">((</span><span class="n">h1</span><span class="p">,</span> <span class="n">d12</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ll1</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">d12</span></div>
+
+<div class="viewcode-block" id="GeoAxes.Get_geodesic_waypoints"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.Get_geodesic_waypoints">[docs]</a>    <span class="k">def</span> <span class="nf">Get_geodesic_waypoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ll1</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">d12</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an array of waypoints on the geodesic line given the start location,</span>
+<span class="sd">        the heading, and the distance. The array will be in the native units</span>
+<span class="sd">        (radians or degrees).</span>
+
+<span class="sd">        Math is found at http://en.wikipedia.org/wiki/Great-circle_navigation</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ll1 : tuple or list of floats</span>
+<span class="sd">            The longitude and latitude of the start point</span>
+<span class="sd">        h1 : float</span>
+<span class="sd">            Heading (angle from North) from the start point</span>
+<span class="sd">        d12 : float</span>
+<span class="sd">            Angular distance to destination point</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Notation: *0 refers to node 0 where great circle intersects equator</span>
+        <span class="c1">#           *1 refers to first point</span>
+        <span class="c1">#           *01 refers to angle between node 0 and point 1</span>
+
+        <span class="c1"># Angular distance is the angle between two points with Earth centre. To</span>
+        <span class="c1"># get actual distance, multiply the angle (in radians) by Earth radius.</span>
+
+        <span class="c1"># Heading is the angle between the path and true North.</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span>
+            <span class="n">ll1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ll1</span><span class="p">)</span>
+            <span class="n">h1</span><span class="p">,</span> <span class="n">d12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">h1</span><span class="p">,</span> <span class="n">d12</span><span class="p">))</span>
+        <span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span> <span class="o">=</span> <span class="n">ll1</span>
+        <span class="c1"># simplify math notation</span>
+        <span class="n">cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span>
+        <span class="n">sin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span>
+        <span class="n">tan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span>
+        <span class="n">atan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span>  <span class="c1"># handles quadrants better than np.arctan</span>
+        <span class="c1"># calculate where great circle crosses equator (node 0)</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">h1</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cos</span><span class="p">(</span><span class="n">h1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">h1</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">h0</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">x0</span><span class="p">)</span>  <span class="c1"># heading at crossing point</span>
+        <span class="n">d01</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">tan</span><span class="p">(</span><span class="n">lat1</span><span class="p">),</span> <span class="n">cos</span><span class="p">(</span><span class="n">h1</span><span class="p">))</span>  <span class="c1"># angular distance from node 0 to pt 1</span>
+        <span class="n">lon01</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">h0</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">d01</span><span class="p">),</span> <span class="n">cos</span><span class="p">(</span><span class="n">d01</span><span class="p">))</span>
+        <span class="n">lon0</span> <span class="o">=</span> <span class="n">lon1</span> <span class="o">-</span> <span class="n">lon01</span>
+        <span class="c1"># create array of angular distances from node 0 to use</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">d01</span><span class="p">,</span> <span class="n">d01</span><span class="o">+</span><span class="n">d12</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">RESOLUTION</span><span class="p">)</span>
+        <span class="c1"># now calculate the latitudes and longitudes</span>
+        <span class="n">ys</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">h0</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cos</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">h0</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">ds</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">lats</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span>
+        <span class="n">lons</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">h0</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">ds</span><span class="p">),</span> <span class="n">cos</span><span class="p">(</span><span class="n">ds</span><span class="p">))</span> <span class="o">+</span> <span class="n">lon0</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">lons</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>  <span class="c1"># check if any points outside map</span>
+            <span class="n">lons</span> <span class="o">=</span> <span class="p">(</span><span class="n">lons</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">])</span>  <span class="c1"># lons (x) go first</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="GeoAxes.Get_geodesic_points"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.Get_geodesic_points">[docs]</a>    <span class="k">def</span> <span class="nf">Get_geodesic_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ll1</span><span class="p">,</span> <span class="n">ll2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of arrays of points on the shortest path between</span>
+<span class="sd">        two endpoints. Because the map wraps at +/- 180°, two arrays may be</span>
+<span class="sd">        returned in the list.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ll1, ll2 : list-like</span>
+<span class="sd">            (longitude, latitude) endpoints of the path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ll1</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">d12</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Get_geodesic_heading_distance</span><span class="p">(</span><span class="n">ll1</span><span class="p">,</span> <span class="n">ll2</span><span class="p">)</span>
+        <span class="n">verts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Get_geodesic_waypoints</span><span class="p">(</span><span class="n">ll1</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">d12</span><span class="p">)</span>
+
+        <span class="c1"># The map wraps around at +/- 180°, so the path must be broken up if path</span>
+        <span class="c1"># wraps. Each part of the path must include one point outside the map</span>
+        <span class="c1"># to make the path intersect with the border correctly.</span>
+
+        <span class="c1"># return simple path if it doesn&#39;t wrap around</span>
+        <span class="c1"># detect wrap by large change in longitude</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="n">diffs</span> <span class="o">=</span> <span class="n">verts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">verts</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># change between each point and next</span>
+        <span class="n">i_chg</span><span class="p">,</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diffs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">i_chg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">verts</span><span class="p">]</span>
+
+        <span class="c1"># break into two parts, including a point for outside the map</span>
+        <span class="n">len1</span> <span class="o">=</span> <span class="n">i_chg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">verts1</span> <span class="o">=</span> <span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">len1</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">verts2</span> <span class="o">=</span> <span class="n">verts</span><span class="p">[</span><span class="n">len1</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># now fix the change points so they lie outside the map</span>
+        <span class="k">if</span> <span class="n">verts1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># start is on the left (-ve)</span>
+            <span class="n">verts1</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">limit</span>
+            <span class="n">verts2</span><span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">limit</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">verts1</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">limit</span>
+            <span class="n">verts2</span><span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">limit</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">verts1</span><span class="p">,</span> <span class="n">verts2</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="GeoAxes.plot_geodesic"><a class="viewcode-back" href="../index.html#EqualEarth.GeoAxes.plot_geodesic">[docs]</a>    <span class="k">def</span> <span class="nf">plot_geodesic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot a geodesic path (shortest path on globe) between a series of points.</span>
+<span class="sd">        The points must be given as (longitude, latitude) pairs, and there must</span>
+<span class="sd">        be at least 2 pairs.</span>
+
+<span class="sd">        Returns a list of lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : array of floats</span>
+<span class="sd">            The data may be an (n, 2) array of floats of longitudes and latitudes,</span>
+<span class="sd">            or it may be as two separate arrays or lists of longitudes and</span>
+<span class="sd">            latitudes, eg ``plot_geodesic(ax, lons, lats, **kwargs)``.</span>
+<span class="sd">        *args : values to pass to the ax.plot() function</span>
+<span class="sd">            These are positional, specifically the color/style string</span>
+<span class="sd">        **kwargs : keyword arguments to pass to the ax.plot() function</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Using two data styles::</span>
+
+<span class="sd">            &gt;&gt;&gt;longs = np.array([-70, 100, 100, -70])</span>
+<span class="sd">            &gt;&gt;&gt;lats = np.array([40, 40, -40, 40])</span>
+<span class="sd">            &gt;&gt;&gt;pts = np.column_stack([longs, lats])  # combine in (4,2) array</span>
+<span class="sd">            &gt;&gt;&gt;ax.plot_geodesic(longs, lats, &#39;b-&#39;, lw=1.)  # plot lines in blue</span>
+<span class="sd">            &gt;&gt;&gt;ax.plot_geodesic(pts, &#39;ro&#39;, markersize=4)   # plot points in red</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No values were provided&#39;</span><span class="p">)</span>
+
+        <span class="n">a0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a0</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># have x values</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># but no y values</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Need both x and y values&#39;</span><span class="p">)</span>
+            <span class="n">a1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>  <span class="c1"># second arg not an array</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Need both x and y values&#39;</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">a0</span><span class="p">,</span> <span class="n">a1</span><span class="p">])</span>  <span class="c1"># put x and y together</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">a0</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># have an (n, m) array</span>
+            <span class="k">if</span> <span class="n">a0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># not an (n, 2) array</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must be an (n, 2) array or list&#39;</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">a0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">errmsg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Data points must be given as: &#39;</span>
+                      <span class="s1">&#39;plot_geodesic(ax, lons, lats, *args, **kwargs) or &#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;plot_geodesic(ax, points, *args, **kwargs)&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">errmsg</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">pts_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Get_geodesic_points</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">pts</span> <span class="ow">in</span> <span class="n">pts_list</span><span class="p">:</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pts</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">pts</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span>
+                                         <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">results</span></div></div>
+
+
+
+<div class="viewcode-block" id="EqualEarthAxes"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes">[docs]</a><span class="k">class</span> <span class="nc">EqualEarthAxes</span><span class="p">(</span><span class="n">GeoAxes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A custom class for the Equal Earth projection, an equal-area map</span>
+<span class="sd">    projection, based on the GeoAxes base class.</span>
+
+<span class="sd">    https://www.researchgate.net/publication/326879978_The_Equal_Earth_map_projection</span>
+
+<span class="sd">    In general, you will not need to call any of these methods. Loading the</span>
+<span class="sd">    module will register the projection with `matplotlib` so that it may be</span>
+<span class="sd">    called using::</span>
+
+<span class="sd">        &gt;&gt;&gt;import matplotlib.pyplot as plt</span>
+<span class="sd">        &gt;&gt;&gt;import EqualEarth</span>
+<span class="sd">        &gt;&gt;&gt;fig = plt.figure(&#39;Equal Earth Projection&#39;)</span>
+<span class="sd">        &gt;&gt;&gt;ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;)</span>
+
+<span class="sd">    There are useful functions from the base :class:`GeoAxes` class,</span>
+<span class="sd">    specifically:</span>
+<span class="sd">        * :func:`GeoAxes.DrawCoastlines`</span>
+<span class="sd">        * :func:`GeoAxes.plot_geodesic`, and</span>
+<span class="sd">        * :func:`GeoAxes.DrawTissot`</span>
+
+<span class="sd">    :func:`GeoAxes.DrawShapes` can also be useful to draw shapes if you</span>
+<span class="sd">    provide a shapefile::</span>
+
+<span class="sd">        &gt;&gt;&gt;import shapefile</span>
+<span class="sd">        &gt;&gt;&gt;sf = shapefile.Reader(path)</span>
+<span class="sd">        &gt;&gt;&gt;ax.DrawShapes(sf, linewidth=.5, edgecolor=&#39;k&#39;, facecolor=&#39;g&#39;)</span>
+
+<span class="sd">    At the moment :func:`GeoAxes.DrawShapes` only works with lines and</span>
+<span class="sd">    polygon shapes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># The projection must specify a name. This will be used by the</span>
+    <span class="c1"># user to select the projection,</span>
+    <span class="c1"># i.e. ``subplot(111, projection=&#39;equal_earth&#39;)``.</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;equal_earth&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="n">GeoAxes</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_longitude_cap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">adjustable</span><span class="o">=</span><span class="s1">&#39;box&#39;</span><span class="p">,</span> <span class="n">anchor</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_core_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">EqualEarthTransform</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_gen_axes_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create the path that defines the outline of the projection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+        <span class="n">verts</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">lim</span><span class="p">),</span> <span class="c1"># left, bottom</span>
+                 <span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>  <span class="n">lim</span><span class="p">),</span> <span class="c1"># left, top</span>
+                 <span class="p">(</span> <span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>  <span class="n">lim</span><span class="p">),</span> <span class="c1"># right, top</span>
+                 <span class="p">(</span> <span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">lim</span><span class="p">),</span> <span class="c1"># right, bottom</span>
+                 <span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">lim</span><span class="p">)]</span> <span class="c1"># close path</span>
+
+        <span class="k">return</span> <span class="n">patches</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_gen_axes_patch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override the parent method to define the shape that is used for the</span>
+<span class="sd">        background of the plot.  It should be a subclass of Patch.</span>
+
+<span class="sd">        In this case, it is a closed square path that is warped by the</span>
+<span class="sd">        projection. Note that it must be in Axes space (0, 1).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen_axes_path</span><span class="p">()</span>  <span class="c1"># Data space</span>
+        <span class="c1"># convert to projection space with iterations on path</span>
+        <span class="n">ipath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transProjection</span><span class="o">.</span><span class="n">transform_path_non_affine</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># convert to axes space</span>
+        <span class="n">apath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transAffine</span><span class="o">.</span><span class="n">transform_path</span><span class="p">(</span><span class="n">ipath</span><span class="p">)</span>  <span class="c1"># Axes space</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">PathPatch</span><span class="p">(</span><span class="n">apath</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">patch</span>
+
+    <span class="k">def</span> <span class="nf">_gen_axes_spines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate the spine for the projection. This will be in data space.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spine_type</span> <span class="o">=</span> <span class="s1">&#39;circle&#39;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen_axes_path</span><span class="p">()</span>
+        <span class="n">spine</span> <span class="o">=</span> <span class="n">mspines</span><span class="o">.</span><span class="n">Spine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spine_type</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;geo&#39;</span><span class="p">:</span> <span class="n">spine</span><span class="p">}</span>
+
+<div class="viewcode-block" id="EqualEarthAxes.EqualEarthTransform"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.EqualEarthTransform">[docs]</a>    <span class="k">class</span> <span class="nc">EqualEarthTransform</span><span class="p">(</span><span class="n">Transform</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The base Equal Earth transform.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_dims</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">output_dims</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">is_separable</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">rad</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create a new Equal Earth transform.  Resolution is the number of</span>
+<span class="sd">            steps to interpolate between each input line segment to approximate</span>
+<span class="sd">            its path in curved Equal Earth space.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resolution</span> <span class="o">=</span> <span class="n">resolution</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span> <span class="o">=</span> <span class="n">rad</span>
+            <span class="n">Transform</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EqualEarthAxes.EqualEarthTransform.transform_non_affine"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.EqualEarthTransform.transform_non_affine">[docs]</a>        <span class="k">def</span> <span class="nf">transform_non_affine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ll</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Core transform, done in radians. Converts degree data to radians</span>
+<span class="sd">            if self._rad is False.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span>
+            <span class="n">long</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">ll</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="c1"># Constants</span>
+            <span class="n">A1</span> <span class="o">=</span> <span class="mf">1.340264</span>
+            <span class="n">A2</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.081106</span>
+            <span class="n">A3</span> <span class="o">=</span> <span class="mf">0.000893</span>
+            <span class="n">A4</span> <span class="o">=</span> <span class="mf">0.003796</span>
+            <span class="n">A23</span> <span class="o">=</span> <span class="n">A2</span> <span class="o">*</span> <span class="mf">3.</span>
+            <span class="n">A37</span> <span class="o">=</span> <span class="n">A3</span> <span class="o">*</span> <span class="mf">7.</span>
+            <span class="n">A49</span> <span class="o">=</span> <span class="n">A4</span> <span class="o">*</span> <span class="mf">9.</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">M</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span>  <span class="c1"># parametric latitude</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">p</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">p6</span> <span class="o">=</span> <span class="n">p</span><span class="o">**</span><span class="mi">6</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">long</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">/</span> \
+                <span class="p">(</span><span class="n">M</span> <span class="o">*</span> <span class="p">(</span><span class="n">A1</span> <span class="o">+</span> <span class="n">A23</span><span class="o">*</span><span class="n">p2</span> <span class="o">+</span> <span class="n">p6</span><span class="o">*</span><span class="p">(</span><span class="n">A37</span> <span class="o">+</span> <span class="n">A49</span><span class="o">*</span><span class="n">p2</span><span class="p">)))</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">A1</span> <span class="o">+</span> <span class="n">A2</span><span class="o">*</span><span class="n">p2</span> <span class="o">+</span> <span class="n">p6</span><span class="o">*</span><span class="p">(</span><span class="n">A3</span> <span class="o">+</span> <span class="n">A4</span><span class="o">*</span><span class="n">p2</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">result</span></div>
+        <span class="n">transform_non_affine</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Transform</span><span class="o">.</span><span class="n">transform_non_affine</span><span class="o">.</span><span class="vm">__doc__</span>
+
+<div class="viewcode-block" id="EqualEarthAxes.EqualEarthTransform.transform_path_non_affine"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.EqualEarthTransform.transform_path_non_affine">[docs]</a>        <span class="k">def</span> <span class="nf">transform_path_non_affine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+            <span class="c1"># vertices = path.vertices</span>
+            <span class="n">ipath</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">interpolated</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolution</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">ipath</span><span class="o">.</span><span class="n">vertices</span><span class="p">),</span> <span class="n">ipath</span><span class="o">.</span><span class="n">codes</span><span class="p">)</span></div>
+        <span class="n">transform_path_non_affine</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> \
+            <span class="n">Transform</span><span class="o">.</span><span class="n">transform_path_non_affine</span><span class="o">.</span><span class="vm">__doc__</span>
+
+<div class="viewcode-block" id="EqualEarthAxes.EqualEarthTransform.inverted"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.EqualEarthTransform.inverted">[docs]</a>        <span class="k">def</span> <span class="nf">inverted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">EqualEarthAxes</span><span class="o">.</span><span class="n">InvertedEqualEarthTransform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolution</span><span class="p">,</span>
+                                                              <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">)</span></div>
+        <span class="n">inverted</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Transform</span><span class="o">.</span><span class="n">inverted</span><span class="o">.</span><span class="vm">__doc__</span></div>
+
+<div class="viewcode-block" id="EqualEarthAxes.InvertedEqualEarthTransform"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.InvertedEqualEarthTransform">[docs]</a>    <span class="k">class</span> <span class="nc">InvertedEqualEarthTransform</span><span class="p">(</span><span class="n">Transform</span><span class="p">):</span>
+        <span class="n">input_dims</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">output_dims</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">is_separable</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">rad</span><span class="p">):</span>
+            <span class="n">Transform</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span> <span class="o">=</span> <span class="n">rad</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resolution</span> <span class="o">=</span> <span class="n">resolution</span>
+
+<div class="viewcode-block" id="EqualEarthAxes.InvertedEqualEarthTransform.transform_non_affine"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.InvertedEqualEarthTransform.transform_non_affine">[docs]</a>        <span class="k">def</span> <span class="nf">transform_non_affine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xy</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Calculate the inverse transform using an iteration method, since</span>
+<span class="sd">            the exact inverse is not solvable. Method based on</span>
+<span class="sd">            https://beta.observablehq.com/@mbostock/equal-earth-projection</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="c1"># if not using radians, convert from degrees first</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">xy</span><span class="o">.</span><span class="n">T</span>
+            <span class="c1"># Constants</span>
+            <span class="n">iterations</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="mf">1e-8</span>
+            <span class="n">A1</span> <span class="o">=</span> <span class="mf">1.340264</span>
+            <span class="n">A2</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.081106</span>
+            <span class="n">A3</span> <span class="o">=</span> <span class="mf">0.000893</span>
+            <span class="n">A4</span> <span class="o">=</span> <span class="mf">0.003796</span>
+            <span class="n">A23</span> <span class="o">=</span> <span class="n">A2</span> <span class="o">*</span> <span class="mf">3.</span>
+            <span class="n">A37</span> <span class="o">=</span> <span class="n">A3</span> <span class="o">*</span> <span class="mf">7.</span>
+            <span class="n">A49</span> <span class="o">=</span> <span class="n">A4</span> <span class="o">*</span> <span class="mf">9.</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="c1"># Use Newtons Method, where:</span>
+            <span class="c1">#   fy is the function you need the root of</span>
+            <span class="c1">#   dy is the derivative of the function</span>
+            <span class="c1">#   dp is fy/dy or the change in estimate.</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>    <span class="c1"># initial estimate for parametric latitude</span>
+            <span class="c1"># Note y is a reference, so as p changes, so would y,</span>
+            <span class="c1"># so make local copy, otherwise the changed y affects results</span>
+            <span class="n">dp</span> <span class="o">=</span> <span class="mf">0.</span>  <span class="c1"># no change at start</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+                <span class="n">p</span> <span class="o">-=</span> <span class="n">dp</span>
+                <span class="n">p2</span> <span class="o">=</span> <span class="n">p</span><span class="o">**</span><span class="mi">2</span>
+                <span class="n">p6</span> <span class="o">=</span> <span class="n">p</span><span class="o">**</span><span class="mi">6</span>
+                <span class="n">fy</span> <span class="o">=</span> <span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">A1</span> <span class="o">+</span> <span class="n">A2</span><span class="o">*</span><span class="n">p2</span> <span class="o">+</span> <span class="n">p6</span><span class="o">*</span><span class="p">(</span><span class="n">A3</span> <span class="o">+</span> <span class="n">A4</span><span class="o">*</span><span class="n">p2</span><span class="p">))</span> <span class="o">-</span> <span class="n">y</span>
+                <span class="n">dy</span> <span class="o">=</span> <span class="n">A1</span> <span class="o">+</span> <span class="n">A23</span><span class="o">*</span><span class="n">p2</span> <span class="o">+</span> <span class="n">p6</span><span class="o">*</span><span class="p">(</span><span class="n">A37</span> <span class="o">+</span> <span class="n">A49</span><span class="o">*</span><span class="n">p2</span><span class="p">)</span>
+                <span class="n">dp</span> <span class="o">=</span> <span class="n">fy</span><span class="o">/</span><span class="n">dy</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span> <span class="k">break</span>
+            <span class="n">long</span> <span class="o">=</span> <span class="n">M</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">dy</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">M</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">long</span><span class="p">,</span> <span class="n">lat</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">:</span> <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span></div>
+        <span class="n">transform_non_affine</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Transform</span><span class="o">.</span><span class="n">transform_non_affine</span><span class="o">.</span><span class="vm">__doc__</span>
+
+<div class="viewcode-block" id="EqualEarthAxes.InvertedEqualEarthTransform.inverted"><a class="viewcode-back" href="../index.html#EqualEarth.EqualEarthAxes.InvertedEqualEarthTransform.inverted">[docs]</a>        <span class="k">def</span> <span class="nf">inverted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">EqualEarthAxes</span><span class="o">.</span><span class="n">EqualEarthTransform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolution</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_rad</span><span class="p">)</span></div>
+        <span class="n">inverted</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Transform</span><span class="o">.</span><span class="n">inverted</span><span class="o">.</span><span class="vm">__doc__</span></div></div>
+
+
+<span class="c1"># Now register the projection with matplotlib so the user can select it.</span>
+<span class="n">register_projection</span><span class="p">(</span><span class="n">EqualEarthAxes</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="s1">&#39;Equal Earth&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">6.</span><span class="p">))</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;equal_earth&#39;</span><span class="p">,</span>
+                         <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#CEEAFD&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">25</span><span class="p">))</span>
+    <span class="n">pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">],</span>
+                    <span class="p">[</span><span class="o">-</span><span class="mi">123</span><span class="p">,</span> <span class="mi">49</span><span class="p">],</span>
+                    <span class="p">[</span><span class="o">-</span><span class="mi">158</span><span class="p">,</span> <span class="mi">21</span><span class="p">],</span>
+                    <span class="p">[</span><span class="mi">116</span><span class="p">,</span> <span class="o">-</span><span class="mi">32</span><span class="p">],</span>
+                    <span class="p">[</span><span class="mf">32.5</span><span class="p">,</span> <span class="o">-</span><span class="mi">26</span><span class="p">],</span>
+                    <span class="p">[</span><span class="mi">105</span><span class="p">,</span> <span class="mf">30.5</span><span class="p">],</span>
+                    <span class="p">[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">]])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">DrawCoastlines</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pts</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">pts</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;ro&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot_geodesic</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="s1">&#39;b:&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">lw</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Equal Earth Projection with Great Circle Lines&#39;</span><span class="p">,</span>
+                 <span class="n">size</span><span class="o">=</span><span class="s1">&#39;x-large&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Equal Earth 2.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Dan Neuman.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>
