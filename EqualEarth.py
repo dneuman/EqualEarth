@@ -46,8 +46,8 @@ your-pythonpath-environment-variable-linuxunixosx/>`_ list to use it in
 another program.
 
 .. note:: Using the :func:`GeoAxes.DrawCoastline` (new in 2.0) function will
-create a ``maps`` folder in the same directory and download some maps (500kb)
-for drawing, the first time it is called.
+          create a ``maps`` folder in the same directory and download some maps
+          (500kb) for drawing, the first time it is called.
 
 Usage
 -----
@@ -101,13 +101,14 @@ New in This Version (2.0)
     See `the Wikipedia article <https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix>`_
     for more information.
 
-Note for ax.plot()
-------------------
-Lines drawn by `ax.plot()` method are clipped by the projection if any portions
-are outside it due to points being greater than +/- 180° in longitude. If you
-want to show lines wrapping around, they must be drawn twice. The second time
-will require the outside points put back into the correct range, but with their
-connecting points now outside the projection.
+.. note:: ax.plot() note:
+
+          Lines drawn by `ax.plot()` method are clipped by the projection if
+          any portions are outside it due to points being greater than +/- 180°
+          in longitude. If you want to show lines wrapping around, they must be
+          drawn twice. The second time will require the outside points put back
+          into the correct range, but with their connecting points now outside
+          the projection.
 
 Example
 -------

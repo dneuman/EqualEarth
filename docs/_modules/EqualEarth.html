@@ -84,8 +84,8 @@
 <span class="sd">another program.</span>
 
 <span class="sd">.. note:: Using the :func:`GeoAxes.DrawCoastline` (new in 2.0) function will</span>
-<span class="sd">create a ``maps`` folder in the same directory and download some maps (500kb)</span>
-<span class="sd">for drawing, the first time it is called.</span>
+<span class="sd">          create a ``maps`` folder in the same directory and download some maps</span>
+<span class="sd">          (500kb) for drawing, the first time it is called.</span>
 
 <span class="sd">Usage</span>
 <span class="sd">-----</span>
@@ -139,13 +139,14 @@
 <span class="sd">    See `the Wikipedia article &lt;https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix&gt;`_</span>
 <span class="sd">    for more information.</span>
 
-<span class="sd">Note for ax.plot()</span>
-<span class="sd">------------------</span>
-<span class="sd">Lines drawn by `ax.plot()` method are clipped by the projection if any portions</span>
-<span class="sd">are outside it due to points being greater than +/- 180° in longitude. If you</span>
-<span class="sd">want to show lines wrapping around, they must be drawn twice. The second time</span>
-<span class="sd">will require the outside points put back into the correct range, but with their</span>
-<span class="sd">connecting points now outside the projection.</span>
+<span class="sd">.. note:: ax.plot() note:</span>
+
+<span class="sd">          Lines drawn by `ax.plot()` method are clipped by the projection if</span>
+<span class="sd">          any portions are outside it due to points being greater than +/- 180°</span>
+<span class="sd">          in longitude. If you want to show lines wrapping around, they must be</span>
+<span class="sd">          drawn twice. The second time will require the outside points put back</span>
+<span class="sd">          into the correct range, but with their connecting points now outside</span>
+<span class="sd">          the projection.</span>
 
 <span class="sd">Example</span>
 <span class="sd">-------</span>

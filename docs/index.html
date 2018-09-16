@@ -83,10 +83,10 @@ your-pythonpath-environment-variable-linuxunixosx/&gt;`_</span></a> list to use 
 another program.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Using the <code class="xref py py-func docutils literal notranslate"><span class="pre">GeoAxes.DrawCoastline()</span></code> (new in 2.0) function will</p>
+<p class="last">Using the <code class="xref py py-func docutils literal notranslate"><span class="pre">GeoAxes.DrawCoastline()</span></code> (new in 2.0) function will
+create a <code class="docutils literal notranslate"><span class="pre">maps</span></code> folder in the same directory and download some maps
+(500kb) for drawing, the first time it is called.</p>
 </div>
-<p>create a <code class="docutils literal notranslate"><span class="pre">maps</span></code> folder in the same directory and download some maps (500kb)
-for drawing, the first time it is called.</p>
 </div>
 <div class="section" id="usage">
 <h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
@@ -144,14 +144,16 @@ projection distorts objects at various positions on the map:</p>
 for more information.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>ax.plot() note:</p>
+<p class="last">Lines drawn by <cite>ax.plot()</cite> method are clipped by the projection if
+any portions are outside it due to points being greater than +/- 180°
+in longitude. If you want to show lines wrapping around, they must be
+drawn twice. The second time will require the outside points put back
+into the correct range, but with their connecting points now outside
+the projection.</p>
 </div>
-<div class="section" id="note-for-ax-plot">
-<h3>Note for ax.plot()<a class="headerlink" href="#note-for-ax-plot" title="Permalink to this headline">¶</a></h3>
-<p>Lines drawn by <cite>ax.plot()</cite> method are clipped by the projection if any portions
-are outside it due to points being greater than +/- 180° in longitude. If you
-want to show lines wrapping around, they must be drawn twice. The second time
-will require the outside points put back into the correct range, but with their
-connecting points now outside the projection.</p>
 <p class="rubric">Example</p>
 <p>This creates a projection map with coastlines using the default settings, and
 adds a few shortest-path lines that demonstrate the wrap-around capabilities:</p>
@@ -834,7 +836,6 @@ button is the mouse button number:</p>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#new-in-this-version-2-0">New in This Version (2.0)</a></li>
-<li><a class="reference internal" href="#note-for-ax-plot">Note for ax.plot()</a></li>
 <li><a class="reference internal" href="#future">Future</a></li>
 </ul>
 </li>
