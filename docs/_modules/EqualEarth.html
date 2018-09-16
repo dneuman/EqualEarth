@@ -73,6 +73,20 @@
 
 <span class="sd">    &gt;&gt;&gt;conda install shapefile</span>
 
+<span class="sd">Installation</span>
+<span class="sd">------------</span>
+<span class="sd">Only the `EqualEarth.py&lt;https://github.com/dneuman/EqualEarth/blob/master/EqualEarth.py&gt;`_</span>
+<span class="sd">file is required. You can download the entire repository using the green &quot;Clone</span>
+<span class="sd">or download&quot; button, or by clicking on the file link, then right-clicking on</span>
+<span class="sd">the &quot;Raw&quot; tab to download the actual script. The script must be located in a</span>
+<span class="sd">directory in your `PYTHONPATH&lt;https://scipher.wordpress.com/2010/05/10/setting-</span>
+<span class="sd">your-pythonpath-environment-variable-linuxunixosx/&gt;`_ list to use it in</span>
+<span class="sd">another program.</span>
+
+<span class="sd">.. note:: Using the :func:`GeoAxes.DrawCoastline` (new in 2.0) function will</span>
+<span class="sd">create a ``maps`` folder in the same directory and download some maps (500kb)</span>
+<span class="sd">for drawing, the first time it is called.</span>
+
 <span class="sd">Usage</span>
 <span class="sd">-----</span>
 <span class="sd">Importing the module causes the Equal Earth projection to be registered with</span>
@@ -132,6 +146,32 @@
 <span class="sd">want to show lines wrapping around, they must be drawn twice. The second time</span>
 <span class="sd">will require the outside points put back into the correct range, but with their</span>
 <span class="sd">connecting points now outside the projection.</span>
+
+<span class="sd">Example</span>
+<span class="sd">-------</span>
+<span class="sd">This creates a projection map with coastlines using the default settings, and</span>
+<span class="sd">adds a few shortest-path lines that demonstrate the wrap-around capabilities::</span>
+
+<span class="sd">    fig = plt.figure(&#39;Equal Earth&#39;, figsize=(10., 6.))</span>
+<span class="sd">    fig.clear()</span>
+<span class="sd">    ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;,</span>
+<span class="sd">                         facecolor=&#39;#CEEAFD&#39;)</span>
+<span class="sd">    ax.tick_params(labelcolor=(0,0,0,.25))</span>
+<span class="sd">    pts = np.array([[-75, 45],</span>
+<span class="sd">                    [-123, 49],</span>
+<span class="sd">                    [-158, 21],</span>
+<span class="sd">                    [116, -32],</span>
+<span class="sd">                    [32.5, -26],</span>
+<span class="sd">                    [105, 30.5],</span>
+<span class="sd">                    [-75, 45]])</span>
+<span class="sd">    ax.DrawCoastlines()</span>
+<span class="sd">    ax.plot(pts[:,0], pts[:,1], &#39;ro&#39;, markersize=4)</span>
+<span class="sd">    ax.plot_geodesic(pts, &#39;b:&#39;, lw=2)</span>
+<span class="sd">    ax.grid(lw=.25)</span>
+<span class="sd">    ax.set_title(&#39;Equal Earth Projection with Great Circle Lines&#39;,</span>
+<span class="sd">                 size=&#39;x-large&#39;)</span>
+<span class="sd">    plt.tight_layout()  # make most use of available space</span>
+<span class="sd">    plt.show()</span>
 
 <span class="sd">Future</span>
 <span class="sd">------</span>
@@ -1153,7 +1193,7 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">lw</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Equal Earth Projection with Great Circle Lines&#39;</span><span class="p">,</span>
                  <span class="n">size</span><span class="o">=</span><span class="s1">&#39;x-large&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>  <span class="c1"># make most use of available space</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 

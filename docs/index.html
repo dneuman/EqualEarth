@@ -72,6 +72,22 @@ from Anaconda, but must be installed first, from the command line:</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<p>Only the <a href="#id1"><span class="problematic" id="id2">`EqualEarth.py&lt;https://github.com/dneuman/EqualEarth/blob/master/EqualEarth.py&gt;`_</span></a>
+file is required. You can download the entire repository using the green “Clone
+or download” button, or by clicking on the file link, then right-clicking on
+the “Raw” tab to download the actual script. The script must be located in a
+directory in your <a href="#id3"><span class="problematic" id="id4">`PYTHONPATH&lt;https://scipher.wordpress.com/2010/05/10/setting-
+your-pythonpath-environment-variable-linuxunixosx/&gt;`_</span></a> list to use it in
+another program.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Using the <code class="xref py py-func docutils literal notranslate"><span class="pre">GeoAxes.DrawCoastline()</span></code> (new in 2.0) function will</p>
+</div>
+<p>create a <code class="docutils literal notranslate"><span class="pre">maps</span></code> folder in the same directory and download some maps (500kb)
+for drawing, the first time it is called.</p>
+</div>
 <div class="section" id="usage">
 <h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
 <p>Importing the module causes the Equal Earth projection to be registered with
@@ -136,6 +152,31 @@ are outside it due to points being greater than +/- 180° in longitude. If you
 want to show lines wrapping around, they must be drawn twice. The second time
 will require the outside points put back into the correct range, but with their
 connecting points now outside the projection.</p>
+<p class="rubric">Example</p>
+<p>This creates a projection map with coastlines using the default settings, and
+adds a few shortest-path lines that demonstrate the wrap-around capabilities:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="s1">&#39;Equal Earth&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">6.</span><span class="p">))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;equal_earth&#39;</span><span class="p">,</span>
+                     <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#CEEAFD&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">25</span><span class="p">))</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">],</span>
+                <span class="p">[</span><span class="o">-</span><span class="mi">123</span><span class="p">,</span> <span class="mi">49</span><span class="p">],</span>
+                <span class="p">[</span><span class="o">-</span><span class="mi">158</span><span class="p">,</span> <span class="mi">21</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">116</span><span class="p">,</span> <span class="o">-</span><span class="mi">32</span><span class="p">],</span>
+                <span class="p">[</span><span class="mf">32.5</span><span class="p">,</span> <span class="o">-</span><span class="mi">26</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">105</span><span class="p">,</span> <span class="mf">30.5</span><span class="p">],</span>
+                <span class="p">[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">DrawCoastlines</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pts</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">pts</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;ro&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_geodesic</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="s1">&#39;b:&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">lw</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Equal Earth Projection with Great Circle Lines&#39;</span><span class="p">,</span>
+             <span class="n">size</span><span class="o">=</span><span class="s1">&#39;x-large&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>  <span class="c1"># make most use of available space</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="future">
 <h3>Future<a class="headerlink" href="#future" title="Permalink to this headline">¶</a></h3>
@@ -790,6 +831,7 @@ button is the mouse button number:</p>
 <li><a class="reference internal" href="#">Equal Earth Documentation</a><ul>
 <li><a class="reference internal" href="#equal-earth-projection">Equal Earth Projection</a><ul>
 <li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#new-in-this-version-2-0">New in This Version (2.0)</a></li>
 <li><a class="reference internal" href="#note-for-ax-plot">Note for ax.plot()</a></li>

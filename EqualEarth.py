@@ -35,6 +35,20 @@ from Anaconda, but must be installed first, from the command line::
 
     >>>conda install shapefile
 
+Installation
+------------
+Only the `EqualEarth.py<https://github.com/dneuman/EqualEarth/blob/master/EqualEarth.py>`_
+file is required. You can download the entire repository using the green "Clone
+or download" button, or by clicking on the file link, then right-clicking on
+the "Raw" tab to download the actual script. The script must be located in a
+directory in your `PYTHONPATH<https://scipher.wordpress.com/2010/05/10/setting-
+your-pythonpath-environment-variable-linuxunixosx/>`_ list to use it in
+another program.
+
+.. note:: Using the :func:`GeoAxes.DrawCoastline` (new in 2.0) function will
+create a ``maps`` folder in the same directory and download some maps (500kb)
+for drawing, the first time it is called.
+
 Usage
 -----
 Importing the module causes the Equal Earth projection to be registered with
@@ -94,6 +108,32 @@ are outside it due to points being greater than +/- 180° in longitude. If you
 want to show lines wrapping around, they must be drawn twice. The second time
 will require the outside points put back into the correct range, but with their
 connecting points now outside the projection.
+
+Example
+-------
+This creates a projection map with coastlines using the default settings, and
+adds a few shortest-path lines that demonstrate the wrap-around capabilities::
+
+    fig = plt.figure('Equal Earth', figsize=(10., 6.))
+    fig.clear()
+    ax = fig.add_subplot(111, projection='equal_earth',
+                         facecolor='#CEEAFD')
+    ax.tick_params(labelcolor=(0,0,0,.25))
+    pts = np.array([[-75, 45],
+                    [-123, 49],
+                    [-158, 21],
+                    [116, -32],
+                    [32.5, -26],
+                    [105, 30.5],
+                    [-75, 45]])
+    ax.DrawCoastlines()
+    ax.plot(pts[:,0], pts[:,1], 'ro', markersize=4)
+    ax.plot_geodesic(pts, 'b:', lw=2)
+    ax.grid(lw=.25)
+    ax.set_title('Equal Earth Projection with Great Circle Lines',
+                 size='x-large')
+    plt.tight_layout()  # make most use of available space
+    plt.show()
 
 Future
 ------
@@ -1115,5 +1155,5 @@ if __name__ == '__main__':
     ax.grid(lw=.25)
     ax.set_title('Equal Earth Projection with Great Circle Lines',
                  size='x-large')
-    plt.tight_layout()
+    plt.tight_layout()  # make most use of available space
     plt.show()

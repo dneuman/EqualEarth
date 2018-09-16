@@ -111,3 +111,4 @@ docs/source/conf.py
 .mypy_cache/
 .DS_Store
 maps/
+doctrees/
