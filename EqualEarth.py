@@ -37,11 +37,11 @@ from Anaconda, but must be installed first, from the command line::
 
 Installation
 ------------
-Only the `EqualEarth.py<https://github.com/dneuman/EqualEarth/blob/master/EqualEarth.py>`_
+Only the `EqualEarth.py <https://github.com/dneuman/EqualEarth/blob/master/EqualEarth.py>`_
 file is required. You can download the entire repository using the green "Clone
 or download" button, or by clicking on the file link, then right-clicking on
 the "Raw" tab to download the actual script. The script must be located in a
-directory in your `PYTHONPATH<https://scipher.wordpress.com/2010/05/10/setting-
+directory in your `PYTHONPATH <https://scipher.wordpress.com/2010/05/10/setting-
 your-pythonpath-environment-variable-linuxunixosx/>`_ list to use it in
 another program.
 
