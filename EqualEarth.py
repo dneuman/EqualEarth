@@ -101,7 +101,7 @@ New in This Version (2.0)
     See `the Wikipedia article <https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix>`_
     for more information.
 
-.. note:: ax.plot() note:
+.. note:: ax.plot():
 
           Lines drawn by `ax.plot()` method are clipped by the projection if
           any portions are outside it due to points being greater than +/- 180°
@@ -109,6 +109,7 @@ New in This Version (2.0)
           drawn twice. The second time will require the outside points put back
           into the correct range, but with their connecting points now outside
           the projection.
+
 
 Example
 -------
@@ -119,7 +120,7 @@ adds a few shortest-path lines that demonstrate the wrap-around capabilities::
     fig.clear()
     ax = fig.add_subplot(111, projection='equal_earth',
                          facecolor='#CEEAFD')
-    ax.tick_params(labelcolor=(0,0,0,.25))
+    ax.tick_params(labelcolor=(0,0,0,.25))  # change label alpha (.25)
     pts = np.array([[-75, 45],
                     [-123, 49],
                     [-158, 21],

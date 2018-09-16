@@ -146,7 +146,7 @@ for more information.</p>
 </dl>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>ax.plot() note:</p>
+<p>ax.plot():</p>
 <p class="last">Lines drawn by <cite>ax.plot()</cite> method are clipped by the projection if
 any portions are outside it due to points being greater than +/- 180°
 in longitude. If you want to show lines wrapping around, they must be
@@ -161,7 +161,7 @@ adds a few shortest-path lines that demonstrate the wrap-around capabilities:</p
 <span class="n">fig</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;equal_earth&#39;</span><span class="p">,</span>
                      <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#CEEAFD&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">25</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">25</span><span class="p">))</span>  <span class="c1"># change label alpha (.25)</span>
 <span class="n">pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">],</span>
                 <span class="p">[</span><span class="o">-</span><span class="mi">123</span><span class="p">,</span> <span class="mi">49</span><span class="p">],</span>
                 <span class="p">[</span><span class="o">-</span><span class="mi">158</span><span class="p">,</span> <span class="mi">21</span><span class="p">],</span>

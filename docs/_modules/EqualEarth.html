@@ -139,7 +139,7 @@
 <span class="sd">    See `the Wikipedia article &lt;https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix&gt;`_</span>
 <span class="sd">    for more information.</span>
 
-<span class="sd">.. note:: ax.plot() note:</span>
+<span class="sd">.. note:: ax.plot():</span>
 
 <span class="sd">          Lines drawn by `ax.plot()` method are clipped by the projection if</span>
 <span class="sd">          any portions are outside it due to points being greater than +/- 180°</span>
@@ -147,6 +147,7 @@
 <span class="sd">          drawn twice. The second time will require the outside points put back</span>
 <span class="sd">          into the correct range, but with their connecting points now outside</span>
 <span class="sd">          the projection.</span>
+
 
 <span class="sd">Example</span>
 <span class="sd">-------</span>
@@ -157,7 +158,7 @@
 <span class="sd">    fig.clear()</span>
 <span class="sd">    ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;,</span>
 <span class="sd">                         facecolor=&#39;#CEEAFD&#39;)</span>
-<span class="sd">    ax.tick_params(labelcolor=(0,0,0,.25))</span>
+<span class="sd">    ax.tick_params(labelcolor=(0,0,0,.25))  # change label alpha (.25)</span>
 <span class="sd">    pts = np.array([[-75, 45],</span>
 <span class="sd">                    [-123, 49],</span>
 <span class="sd">                    [-158, 21],</span>
