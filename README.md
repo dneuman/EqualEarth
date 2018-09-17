@@ -28,6 +28,10 @@ where:
 * A3 =  0.000893
 * A4 =  0.003796
 
+Full Documentation
+------------------
+Full documentation is at: https://github.com/dneuman/EqualEarth
+
 Requirements
 ------------
 shapefile (from pyshp) is required to read the map data. This is available
@@ -73,10 +77,17 @@ DrawCoastlines:
 
 Great Circle (geodesic) lines:
     Navigation lines can be plotted using the shortest path on the globe. These
-    lines take plot keywords and wrap around if necessary.::
+    lines take plot keywords and wrap around if necessary::
 
         >>>pts = np.array([[-150, 45], [150, 45]])
         >>>ax.plot_geodesic(pts, 'b:', linewidth=1, alpha=.8)
+
+Tissot Indicatrix of Distortion:
+    Circles can be plotted at regular intervals on the projection to show
+    map distortion at various places::
+
+        >>>ax.DrawTissot(width=10.)
+
 
 Plot Note
 ---------
