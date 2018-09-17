@@ -87,29 +87,6 @@
 <span class="sd">          create a ``maps`` folder in the same directory and download some maps</span>
 <span class="sd">          (500kb) for drawing, the first time it is called.</span>
 
-<span class="sd">Usage</span>
-<span class="sd">-----</span>
-<span class="sd">Importing the module causes the Equal Earth projection to be registered with</span>
-<span class="sd">Matplotlib so that it can be used when creating a subplot::</span>
-
-<span class="sd">    &gt;&gt;&gt;import matplotlib.pyplot as plt</span>
-<span class="sd">    &gt;&gt;&gt;import EqualEarth</span>
-<span class="sd">    &gt;&gt;&gt;longs = [-200, 100, 100, -200]</span>
-<span class="sd">    &gt;&gt;&gt;lats = [40, 40, -40, 40]</span>
-<span class="sd">    &gt;&gt;&gt;fig = plt.figure(&#39;Equal Earth Projection&#39;)</span>
-<span class="sd">    &gt;&gt;&gt;ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;, facecolor=&#39;lightblue&#39;)</span>
-<span class="sd">    &gt;&gt;&gt;ax.plot(longs, lats)</span>
-<span class="sd">    &gt;&gt;&gt;plt.grid(True)</span>
-<span class="sd">    &gt;&gt;&gt;plt.show()</span>
-
-<span class="sd">Note that the default behaviour is to take all data in degrees. If radians</span>
-<span class="sd">are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,</span>
-<span class="sd">ie::</span>
-
-<span class="sd">    &gt;&gt;&gt;ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;, rad=True)</span>
-
-<span class="sd">All plots must be done in radians at this point.</span>
-
 <span class="sd">New in This Version (2.0)</span>
 <span class="sd">-------------------------</span>
 <span class="sd">:func:`GeoAxes.DrawCoastlines`:</span>
@@ -139,26 +116,52 @@
 <span class="sd">    See `the Wikipedia article &lt;https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix&gt;`_</span>
 <span class="sd">    for more information.</span>
 
+<span class="sd">Usage</span>
+<span class="sd">-----</span>
+<span class="sd">Importing the module causes the Equal Earth projection to be registered with</span>
+<span class="sd">Matplotlib so that it can be used when creating a subplot::</span>
+
+<span class="sd">    import matplotlib.pyplot as plt</span>
+<span class="sd">    import EqualEarth</span>
+<span class="sd">    longs = [-200, 100, 100, -200]</span>
+<span class="sd">    lats = [40, 40, -40, 40]</span>
+<span class="sd">    fig = plt.figure(&#39;Equal Earth Projection&#39;)</span>
+<span class="sd">    ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;, facecolor=&#39;lightblue&#39;)</span>
+<span class="sd">    ax.plot(longs, lats)</span>
+<span class="sd">    plt.grid(True)</span>
+<span class="sd">    plt.tight_layout()</span>
+<span class="sd">    plt.show()</span>
+
+<span class="sd">.. figure:: _static/Equal_Earth_Projection.png</span>
+<span class="sd">   :align:  center</span>
+
 <span class="sd">.. note:: ax.plot():</span>
 
 <span class="sd">          Lines drawn by `ax.plot()` method are clipped by the projection if</span>
 <span class="sd">          any portions are outside it due to points being greater than +/- 180°</span>
 <span class="sd">          in longitude. If you want to show lines wrapping around, they must be</span>
 <span class="sd">          drawn twice. The second time will require the outside points put back</span>
-<span class="sd">          into the correct range, but with their connecting points now outside</span>
-<span class="sd">          the projection.</span>
+<span class="sd">          into the correct range by adding or subtracting 360 as required.</span>
 
+<span class="sd">Note that the default behaviour is to take all data in degrees. If radians</span>
+<span class="sd">are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,</span>
+<span class="sd">ie::</span>
 
-<span class="sd">Example</span>
-<span class="sd">-------</span>
-<span class="sd">This creates a projection map with coastlines using the default settings, and</span>
-<span class="sd">adds a few shortest-path lines that demonstrate the wrap-around capabilities::</span>
+<span class="sd">    ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;, rad=True)</span>
 
+<span class="sd">All plots must be done in radians at this point.</span>
+
+<span class="sd">This example creates a projection map with coastlines using the default</span>
+<span class="sd">settings, and adds a few shortest-path lines that demonstrate the wrap-around</span>
+<span class="sd">capabilities::</span>
+
+<span class="sd">    import matplotlib.pyplot as plt</span>
+<span class="sd">    import EqualEarth</span>
 <span class="sd">    fig = plt.figure(&#39;Equal Earth&#39;, figsize=(10., 6.))</span>
 <span class="sd">    fig.clear()</span>
 <span class="sd">    ax = fig.add_subplot(111, projection=&#39;equal_earth&#39;,</span>
 <span class="sd">                         facecolor=&#39;#CEEAFD&#39;)</span>
-<span class="sd">    ax.tick_params(labelcolor=(0,0,0,.25))  # change label alpha (.25)</span>
+<span class="sd">    ax.tick_params(labelcolor=(0,0,0,.25))  # make alpha .25 to lighten</span>
 <span class="sd">    pts = np.array([[-75, 45],</span>
 <span class="sd">                    [-123, 49],</span>
 <span class="sd">                    [-158, 21],</span>
@@ -166,14 +169,17 @@
 <span class="sd">                    [32.5, -26],</span>
 <span class="sd">                    [105, 30.5],</span>
 <span class="sd">                    [-75, 45]])</span>
-<span class="sd">    ax.DrawCoastlines()</span>
+<span class="sd">    ax.DrawCoastlines(zorder=0)  # put land under grid</span>
 <span class="sd">    ax.plot(pts[:,0], pts[:,1], &#39;ro&#39;, markersize=4)</span>
 <span class="sd">    ax.plot_geodesic(pts, &#39;b:&#39;, lw=2)</span>
-<span class="sd">    ax.grid(lw=.25)</span>
+<span class="sd">    ax.grid(color=&#39;grey&#39;, lw=.25)</span>
 <span class="sd">    ax.set_title(&#39;Equal Earth Projection with Great Circle Lines&#39;,</span>
 <span class="sd">                 size=&#39;x-large&#39;)</span>
 <span class="sd">    plt.tight_layout()  # make most use of available space</span>
 <span class="sd">    plt.show()</span>
+
+<span class="sd">.. figure:: _static/Equal_Earth.png</span>
+<span class="sd">   :align:  center</span>
 
 <span class="sd">Future</span>
 <span class="sd">------</span>
@@ -595,7 +601,7 @@
     <span class="n">_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;land&#39;</span><span class="p">,</span> <span class="s1">&#39;coastline&#39;</span><span class="p">,</span> <span class="s1">&#39;lakes&#39;</span><span class="p">]</span>
 
 
-    <span class="k">def</span> <span class="nf">_CheckMaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check_only</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_CheckMaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check to see if the maps already exist, otherwise download them from</span>
 <span class="sd">        Natural Earth&#39;s content delivery network. It will be downloaded into the</span>
@@ -623,6 +629,7 @@
                 <span class="n">zfile</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">mapdir</span><span class="p">)</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="n">zfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_DrawEllipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ll</span><span class="p">,</span> <span class="n">width_deg</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -745,12 +752,16 @@
 <span class="sd">        linewidth, lw : float, optional, default: .25</span>
 <span class="sd">            Line width of coastlines and lake edges.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check that maps exist and download if necessary</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_CheckMaps</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;maps not available&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
 
         <span class="c1"># Set up colors, overriding defaults if shortcuts given</span>
         <span class="n">bc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_facecolor</span><span class="p">()</span>         <span class="c1"># background color</span>
-        <span class="n">ec</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ec&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">)</span>  <span class="c1"># edge color</span>
-        <span class="n">fc</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fc&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">)</span>  <span class="c1"># face color</span>
-        <span class="n">lw</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lw&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">)</span>  <span class="c1"># line width</span>
+        <span class="n">ec</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;ec&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">)</span>  <span class="c1"># edge color</span>
+        <span class="n">fc</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;fc&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">)</span>  <span class="c1"># face color</span>
+        <span class="n">lw</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;lw&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">)</span>  <span class="c1"># line width</span>
 
         <span class="c1">#        land   coast   lakes</span>
         <span class="n">edges</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">ec</span><span class="p">,</span>    <span class="n">ec</span><span class="p">]</span>
@@ -761,7 +772,7 @@
         <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">faces</span><span class="p">,</span> <span class="n">edges</span><span class="p">):</span>
             <span class="n">sf</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">DrawShapes</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">lw</span><span class="p">,</span>
-                            <span class="n">edgecolor</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">f</span><span class="p">)</span></div>
+                            <span class="n">edgecolor</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <span class="c1"># %% Geodesic</span>
 
@@ -1181,7 +1192,7 @@
     <span class="n">fig</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;equal_earth&#39;</span><span class="p">,</span>
                          <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#CEEAFD&#39;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">25</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">25</span><span class="p">))</span>  <span class="c1"># make alpha .25 to lighten</span>
     <span class="n">pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">],</span>
                     <span class="p">[</span><span class="o">-</span><span class="mi">123</span><span class="p">,</span> <span class="mi">49</span><span class="p">],</span>
                     <span class="p">[</span><span class="o">-</span><span class="mi">158</span><span class="p">,</span> <span class="mi">21</span><span class="p">],</span>
@@ -1189,10 +1200,10 @@
                     <span class="p">[</span><span class="mf">32.5</span><span class="p">,</span> <span class="o">-</span><span class="mi">26</span><span class="p">],</span>
                     <span class="p">[</span><span class="mi">105</span><span class="p">,</span> <span class="mf">30.5</span><span class="p">],</span>
                     <span class="p">[</span><span class="o">-</span><span class="mi">75</span><span class="p">,</span> <span class="mi">45</span><span class="p">]])</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">DrawCoastlines</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">DrawCoastlines</span><span class="p">(</span><span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># put land under grid</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pts</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">pts</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;ro&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot_geodesic</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="s1">&#39;b:&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">lw</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Equal Earth Projection with Great Circle Lines&#39;</span><span class="p">,</span>
                  <span class="n">size</span><span class="o">=</span><span class="s1">&#39;x-large&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>  <span class="c1"># make most use of available space</span>

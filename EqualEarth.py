@@ -49,29 +49,6 @@ another program.
           create a ``maps`` folder in the same directory and download some maps
           (500kb) for drawing, the first time it is called.
 
-Usage
------
-Importing the module causes the Equal Earth projection to be registered with
-Matplotlib so that it can be used when creating a subplot::
-
-    >>>import matplotlib.pyplot as plt
-    >>>import EqualEarth
-    >>>longs = [-200, 100, 100, -200]
-    >>>lats = [40, 40, -40, 40]
-    >>>fig = plt.figure('Equal Earth Projection')
-    >>>ax = fig.add_subplot(111, projection='equal_earth', facecolor='lightblue')
-    >>>ax.plot(longs, lats)
-    >>>plt.grid(True)
-    >>>plt.show()
-
-Note that the default behaviour is to take all data in degrees. If radians
-are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,
-ie::
-
-    >>>ax = fig.add_subplot(111, projection='equal_earth', rad=True)
-
-All plots must be done in radians at this point.
-
 New in This Version (2.0)
 -------------------------
 :func:`GeoAxes.DrawCoastlines`:
@@ -101,26 +78,52 @@ New in This Version (2.0)
     See `the Wikipedia article <https://en.m.wikipedia.org/wiki/Tissot%27s_indicatrix>`_
     for more information.
 
+Usage
+-----
+Importing the module causes the Equal Earth projection to be registered with
+Matplotlib so that it can be used when creating a subplot::
+
+    import matplotlib.pyplot as plt
+    import EqualEarth
+    longs = [-200, 100, 100, -200]
+    lats = [40, 40, -40, 40]
+    fig = plt.figure('Equal Earth Projection')
+    ax = fig.add_subplot(111, projection='equal_earth', facecolor='lightblue')
+    ax.plot(longs, lats)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+.. figure:: _static/Equal_Earth_Projection.png
+   :align:  center
+
 .. note:: ax.plot():
 
           Lines drawn by `ax.plot()` method are clipped by the projection if
           any portions are outside it due to points being greater than +/- 180°
           in longitude. If you want to show lines wrapping around, they must be
           drawn twice. The second time will require the outside points put back
-          into the correct range, but with their connecting points now outside
-          the projection.
+          into the correct range by adding or subtracting 360 as required.
 
+Note that the default behaviour is to take all data in degrees. If radians
+are preferred, use the ``rad=True`` optional keyword in ``fig.add_subplot()``,
+ie::
 
-Example
--------
-This creates a projection map with coastlines using the default settings, and
-adds a few shortest-path lines that demonstrate the wrap-around capabilities::
+    ax = fig.add_subplot(111, projection='equal_earth', rad=True)
 
+All plots must be done in radians at this point.
+
+This example creates a projection map with coastlines using the default
+settings, and adds a few shortest-path lines that demonstrate the wrap-around
+capabilities::
+
+    import matplotlib.pyplot as plt
+    import EqualEarth
     fig = plt.figure('Equal Earth', figsize=(10., 6.))
     fig.clear()
     ax = fig.add_subplot(111, projection='equal_earth',
                          facecolor='#CEEAFD')
-    ax.tick_params(labelcolor=(0,0,0,.25))  # change label alpha (.25)
+    ax.tick_params(labelcolor=(0,0,0,.25))  # make alpha .25 to lighten
     pts = np.array([[-75, 45],
                     [-123, 49],
                     [-158, 21],
@@ -128,14 +131,17 @@ adds a few shortest-path lines that demonstrate the wrap-around capabilities::
                     [32.5, -26],
                     [105, 30.5],
                     [-75, 45]])
-    ax.DrawCoastlines()
+    ax.DrawCoastlines(zorder=0)  # put land under grid
     ax.plot(pts[:,0], pts[:,1], 'ro', markersize=4)
     ax.plot_geodesic(pts, 'b:', lw=2)
-    ax.grid(lw=.25)
+    ax.grid(color='grey', lw=.25)
     ax.set_title('Equal Earth Projection with Great Circle Lines',
                  size='x-large')
     plt.tight_layout()  # make most use of available space
     plt.show()
+
+.. figure:: _static/Equal_Earth.png
+   :align:  center
 
 Future
 ------
@@ -557,7 +563,7 @@ class GeoAxes(Axes):
     _names = ['land', 'coastline', 'lakes']
 
 
-    def _CheckMaps(self, check_only=True):
+    def _CheckMaps(self, check_only=False):
         """
         Check to see if the maps already exist, otherwise download them from
         Natural Earth's content delivery network. It will be downloaded into the
@@ -585,6 +591,7 @@ class GeoAxes(Axes):
                 zfile.extractall(mapdir)
             finally:
                 zfile.close()
+        return True
 
     def _DrawEllipse(self, ll, width_deg, resolution=50):
         """
@@ -707,12 +714,16 @@ class GeoAxes(Axes):
         linewidth, lw : float, optional, default: .25
             Line width of coastlines and lake edges.
         """
+        # Check that maps exist and download if necessary
+        if not self._CheckMaps():
+            print('maps not available')
+            return
 
         # Set up colors, overriding defaults if shortcuts given
         bc = self.get_facecolor()         # background color
-        ec = kwargs.get('ec', edgecolor)  # edge color
-        fc = kwargs.get('fc', facecolor)  # face color
-        lw = kwargs.get('lw', linewidth)  # line width
+        ec = kwargs.pop('ec', edgecolor)  # edge color
+        fc = kwargs.pop('fc', facecolor)  # face color
+        lw = kwargs.pop('lw', linewidth)  # line width
 
         #        land   coast   lakes
         edges = ['none', ec,    ec]
@@ -723,7 +734,7 @@ class GeoAxes(Axes):
         for path, f, e in zip(paths, faces, edges):
             sf = shapefile.Reader(path)
             self.DrawShapes(sf, linewidth=lw,
-                            edgecolor=e, facecolor=f)
+                            edgecolor=e, facecolor=f, **kwargs)
 
 # %% Geodesic
 
@@ -1143,7 +1154,7 @@ if __name__ == '__main__':
     fig.clear()
     ax = fig.add_subplot(111, projection='equal_earth',
                          facecolor='#CEEAFD')
-    ax.tick_params(labelcolor=(0,0,0,.25))
+    ax.tick_params(labelcolor=(0,0,0,.25))  # make alpha .25 to lighten
     pts = np.array([[-75, 45],
                     [-123, 49],
                     [-158, 21],
@@ -1151,10 +1162,10 @@ if __name__ == '__main__':
                     [32.5, -26],
                     [105, 30.5],
                     [-75, 45]])
-    ax.DrawCoastlines()
+    ax.DrawCoastlines(zorder=0)  # put land under grid
     ax.plot(pts[:,0], pts[:,1], 'ro', markersize=4)
     ax.plot_geodesic(pts, 'b:', lw=2)
-    ax.grid(lw=.25)
+    ax.grid(color='grey', lw=.25)
     ax.set_title('Equal Earth Projection with Great Circle Lines',
                  size='x-large')
     plt.tight_layout()  # make most use of available space
