@@ -30,7 +30,7 @@ where:
 
 Full Documentation
 ------------------
-Full documentation is at: https://github.com/dneuman/EqualEarth
+Full documentation is at: https://dneuman.github.io/EqualEarth/
 
 Requirements
 ------------
